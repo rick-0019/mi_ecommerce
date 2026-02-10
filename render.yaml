@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: mi-ecommerce
+    name: mi-ecommerce-service
     env: python
     buildCommand: "./build.sh"
     startCommand: "gunicorn configuracion_principal.wsgi:application"
@@ -11,12 +11,8 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
-      - key: WEB_CONCURRENCY
-        value: "4"
       - key: DEBUG
-        value: "False"
-      - key: ALLOWED_HOSTS
-        value: "*" # Podés cambiarlo por tu dominio real después
+        value: "false"
 
 databases:
   - name: mi-ecommerce-db
