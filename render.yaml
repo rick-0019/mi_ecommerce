@@ -20,6 +20,4 @@ services:
 
 databases:
   - name: mi-ecommerce-db
-    databaseName: mi_ecommerce_db
-    user: miuser
-    plan: free # Cambiar a 'standard' si necesitás más potencia
+    plan: free
