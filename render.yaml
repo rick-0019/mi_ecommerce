@@ -12,14 +12,14 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: WEB_CONCURRENCY
-        value: 4
+        value: "4"
       - key: DEBUG
-        value: False
+        value: "False"
       - key: ALLOWED_HOSTS
         value: "*" # Podés cambiarlo por tu dominio real después
 
 databases:
   - name: mi-ecommerce-db
     databaseName: mi_ecommerce_db
-    user: mi_user
+    user: miuser
     plan: free # Cambiar a 'standard' si necesitás más potencia
