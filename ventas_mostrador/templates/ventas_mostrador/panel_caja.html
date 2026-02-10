@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow border-0" style="border-radius: 15px overflow: hidden;">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+            <h4 class="mb-0"><i class="bi bi-cash-register me-2"></i>Panel de Cobros</h4>
+            <span class="badge bg-primary px-3 py-2">Sucursal: {{ request.user.sucursal }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Pedido #</th>
+                            <th>Cliente</th>
+                            <th>Origen</th>
+                            <th>Monto</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos %}
+                        <tr>
+                            <td class="fw-bold text-primary">#{{ p.nro_pedido }}</td>
+                            <td>{{ p.cliente }}</td>
+                            <td>
+                                {% if p.canal == 'MOS' %}
+                                <span class="badge bg-secondary">Mostrador</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Web (Retiro)</span>
+                                {% endif %}
+                            </td>
+                            <td class="fs-5 fw-bold text-success">${{ p.total }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-outline-primary btn-sm me-2 px-3" 
+                                        onclick="verDetalle('{{ p.nro_pedido }}', '{{ p.cliente }}')">
+                                    <i class="bi bi-list-check"></i> Items
+                                </button>
+
+                                <a href="{% url 'ventas_mostrador:finalizar_pedido_caja' p.nro_pedido %}" class="btn btn-success btn-sm px-4">
+                                    <i class="bi bi-wallet2"></i> Cobrar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No hay cobros pendientes en este momento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold fs-4" id="modalTitle" style="color: #2c3e50;"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 pt-4">
+                <div id="itemsContainer">
+                    </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function verDetalle(pedidoId, cliente) {
+    document.getElementById('modalTitle').innerText = `Pedido #${pedidoId} - ${cliente}`;
+    const container = document.getElementById('itemsContainer');
+    
+    // Loader profesional
+    container.innerHTML = `
+        <div class="text-center my-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Cargando productos...</p>
+        </div>`;
+
+    var myModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+    myModal.show();
+
+    fetch(`/ventas/detalle-pedido/${pedidoId}/`)
+        .then(response => {
+            if (!response.ok) throw new Error('Error al conectar con el servidor');
+            return response.json();
+        })
+        .then(data => {
+            container.innerHTML = '';
+            let totalAcumulado = 0;
+
+            data.forEach(item => {
+                totalAcumulado += parseFloat(item.subtotal);
+                container.innerHTML += `
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="me-3">
+                            <span class="badge bg-primary px-3 py-2 fs-6" style="border-radius: 10px; min-width: 45px;">
+                                ${item.cantidad}
+                            </span>
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-1" style="color: #2c3e50; font-size: 1.05rem;">
+                                ${item.producto_nombre}
+                            </h6>
+                            <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                SKU: ${item.sku || 'N/A'}
+                            </span>
+                        </div>
+
+                        <div class="text-end">
+                            <span class="fw-bold fs-5 text-dark">$${parseFloat(item.subtotal).toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                        </div>
+                    </div>`;
+            });
+
+            // Total Final Destacado
+            container.innerHTML += `
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="h4 fw-bold mb-0">Total Pedido:</span>
+                    <span class="h3 fw-bold text-success mb-0">$${totalAcumulado.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>`;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger border-0 text-center" style="border-radius: 12px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
+                    No se pudieron cargar los productos.
+                </div>`;
+        });
+}
+</script>
+{% endblock %}

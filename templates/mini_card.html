@@ -1,0 +1,35 @@
+<div class="card h-100 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; background: #fff;">
+    <div class="text-end mb-1 px-2 pt-2">
+        <a href="#" class="btn-favorito no-tooltip" data-producto-id="${item.id}" style="width: 24px; height: 24px;">
+            <i class="bi bi-heart" style="font-size: 0.8rem;"></i>
+        </a>
+    </div>
+    <a href="/producto/${item.slug}/" class="text-decoration-none">
+        <div class="d-flex align-items-center justify-content-center bg-light" style="height: 130px; padding: 10px;">
+            <img src="${item.imagen_url}" class="img-fluid" style="max-height: 100%; object-fit: contain;">
+        </div>
+    </a>
+    
+    <div class="card-body p-2 d-flex flex-column">
+        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.6rem;">${item.marca}</small>
+        
+        <h6 class="text-dark mb-1" style="font-size: 0.8rem; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 500;">
+            ${item.nombre}
+        </h6>
+        
+        <div class="mt-auto">
+            <span class="fw-bold d-block text-dark" style="font-size: 1rem;">$ ${item.precio}</span>
+            
+            <button class="btn btn-sm w-100 mt-2 fw-bold" 
+                    onclick="agregarAlCarrito('${item.id}')"
+                    style="background-color: #39ce66; color: white; border: none; border-radius: 6px; font-size: 0.75rem; padding: 5px;">
+                AGREGAR
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    
+</style>
+

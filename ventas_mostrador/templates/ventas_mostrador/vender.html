@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-search me-2"></i>Buscador de Productos</h5>
+                    <span class="badge bg-primary">Sucursal: {{ user.sucursal|default:"Principal" }}</span>
+                </div>
+                <div class="card-body">
+                    {% if errores_stock %}
+                    <div class="alert alert-danger shadow-sm mb-4" role="alert" style="border-left: 5px solid #dc3545;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="alert-heading fw-bold mb-1"><i
+                                        class="fas fa-exclamation-triangle me-2"></i>Stock Insuficiente</h5>
+                                <p class="mb-0">Algunos productos no tienen la cantidad solicitada.</p>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm fw-bold" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false">
+                                VER DETALLE <i class="fas fa-chevron-down ms-1"></i>
+                            </button>
+                        </div>
+
+                        <div class="collapse mt-3" id="collapseErrors">
+                            <div class="list-group list-group-flush border rounded bg-white">
+                                {% for error in errores_stock %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div class="me-3 flex-grow-1">
+                                        <div class="fw-bold text-dark">
+                                            {{error.producto.nombre|default:"ProductoDesconocido" }}</div>
+                                        <small class="text-muted">SKU: {{ error.producto.sku|default:"-" }}</small>
+                                    </div>
+                                    <div class="text-end" style="min-width: 120px;">
+                                        <span class="badge bg-danger rounded-pill mb-1 d-block">Solicitado:
+                                            {{error.solicitado }}</span>
+                                        <span class="badge bg-success rounded-pill d-block">Disponible:
+                                            {{error.disponible|default:"0" }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3 text-end">
+                                <small class="text-muted fst-italic">Por favor ajuste las cantidades en el
+                                    ticket.</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-white border-primary text-primary">
+                            <i class="fas fa-barcode"></i>
+                        </span>
+                        <input type="text" id="busqueda-ajax" class="form-control form-control-lg border-primary"
+                            placeholder="Escriba Nombre, SKU o Categoría..." autocomplete="off" autofocus>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 510px; overflow-y: auto;">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultados-busqueda">
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fas fa-arrow-up d-block mb-2 fa-2x"></i>
+                                        Utilice el buscador para encontrar productos
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 border-start border-primary border-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Ticket de Venta</h5>
+                    <small>Vendedor: {{ user.username }}</small>
+                </div>
+                <div class="card-body p-0">
+                    <div style="min-height: 300px; max-height: 450px; overflow-y: auto;">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-3">Descripción</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th>Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-ticket">
+                                {% for item in ticket.values %}
+                                <tr class="align-middle">
+                                    <td class="ps-3" style="width: 45%;">
+                                        <div class="fw-bold text-dark" style="font-size: 0.9rem; line-height: 1.2;">
+                                            {{item.nombre }}</div>
+                                        <small class="text-muted">SKU: {{ item.sku }}</small>
+                                    </td>
+                                    <td class="text-center" style="width: 30%;">
+                                        <div class="btn-group shadow-sm" role="group">
+                                            <a href="{% url 'ventas_mostrador:restar_producto_mostrador' item.producto_id %}"
+                                                class="btn btn-sm btn-danger px-2" style="min-width: 30px;">
+                                                <i class="fas fa-minus"></i>
+                                            </a>
+
+                                            <span class="btn btn-sm btn-light disabled fw-bold text-dark px-3"
+                                                style="min-width: 40px; opacity: 1;">
+                                                {{ item.cantidad }}
+                                            </span>
+
+                                            <button type="button" data-id="{{ item.producto_id }}"
+                                                onclick="agregarAlTicket(this.getAttribute('data-id'))"
+                                                class="btn btn-sm btn-success px-2" style="min-width: 30px;">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold text-end pe-2" style="width: 20%;">
+                                        ${{ item.acumulado|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center" style="width: 5%;">
+                                        <a href="{% url 'ventas_mostrador:restar_producto_mostrador' item.producto_id %}"
+                                            class="btn btn-link text-danger p-0">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="fas fa-shopping-basket d-block mb-2 fa-2x"></i>
+                                        El ticket está vacío
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top-0 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="h4 mb-0">TOTAL:</span>
+                        <span class="h3 mb-0 text-primary fw-bold" id="total-ticket">
+                            $ {{ total_ticket|default:"0.00"|floatformat:2 }}
+                        </span>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <a href="{% url 'ventas_mostrador:confirmar_preventa' %}"
+                                class="btn btn-success btn-lg w-100 fw-bold shadow-sm">
+                                <i class="fas fa-check-double me-2"></i> GENERAR PREVENTA
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            <a href="{% url 'ventas_mostrador:limpiar_carrito_ventas' %}"
+                                class="btn btn-outline-danger btn-lg w-100 fw-bold shadow-sm">
+                                VACIAR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% if messages %}
+    {% for message in messages %}
+        {% if message.tags == 'success' %}
+            <div id="django-success-msg" style="display:none;">{{ message }}</div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+<div class="modal fade" id="modalExito" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-success fa-5x animate__animated animate__bounceIn"></i>
+                </div>
+                <h2 class="fw-bold text-dark">¡Venta Generada!</h2>
+                <p class="text-muted fs-5" id="mensajeExito">El pedido se ha registrado correctamente.</p>
+                <button type="button" class="btn btn-success btn-lg w-100 fw-bold mt-3" data-bs-dismiss="modal">
+                    CONTINUAR VENDIENDO
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const inputBusqueda = document.getElementById('busqueda-ajax');
+    const tablaResultados = document.getElementById('resultados-busqueda');
+
+    // Función para buscar productos mediante AJAX
+    inputBusqueda.addEventListener('input', function (e) {
+        let query = e.target.value;
+
+        if (query.length > 2) {
+            fetch(`/ventas/buscar/?q=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '';
+                    if (data.productos && data.productos.length > 0) {
+                        data.productos.forEach(p => {
+                            html += `
+                            <tr>
+                                <td><span class="badge bg-secondary">${p.sku}</span></td>
+                                <td style="width: 40%;"><strong>${p.nombre}</strong></td>
+                                <td><small class="text-muted">${p.categoria}</small></td>
+                                <td class="fw-bold text-primary text-end" style="white-space: nowrap; min-width: 120px;">
+                                    $ ${parseFloat(p.precio).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            data-id="${p.id}"
+                                            onclick="agregarAlTicket(this.getAttribute('data-id'))"
+                                            class="btn btn-sm btn-primary rounded-pill shadow-sm px-3">
+                                        <i class="fas fa-plus me-1"></i> Agregar
+                                    </button>
+                                </td>
+                            </tr>`;
+                        });
+                    } else {
+                        html = '<tr><td colspan="5" class="text-center text-muted">No se encontraron productos</td></tr>';
+                    }
+                    tablaResultados.innerHTML = html;
+                });
+        } else if (query.length === 0) {
+            tablaResultados.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Utilice el buscador para encontrar productos</td></tr>';
+        }
+    });
+
+    // Función para agregar al ticket mediante AJAX
+    function agregarAlTicket(productoId) {
+        fetch(`/ventas/agregar-ajax/${productoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    // Refrescamos para que el ticket de la derecha se actualice con la nueva sesión
+                    location.reload();
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Atajo: Escape limpia el buscador y le da foco
+    window.addEventListener('keydown', function (e) {
+        if (e.key === "Escape") {
+            inputBusqueda.value = '';
+            inputBusqueda.focus();
+            tablaResultados.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Utilice el buscador para encontrar productos</td></tr>';
+        }
+
+        
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Buscamos si existe el elemento de éxito en el DOM
+    const mensajeElemento = document.getElementById('django-success-msg');
+    
+    if (mensajeElemento) {
+        const mensajeTexto = mensajeElemento.textContent;
+        document.getElementById('mensajeExito').innerText = mensajeTexto;
+        
+        // Disparamos el modal de Bootstrap
+        const modalNode = document.getElementById('modalExito');
+        const modal = new bootstrap.Modal(modalNode);
+        modal.show();
+    }
+});
+    
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="fw-bold mb-4"><i class="bi bi-person-gear text-success"></i> Mi Perfil</h2>
+            
+            <div class="card border-0 shadow-sm p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">Nombre</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ usuario.first_name }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">Apellido</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ usuario.last_name }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ usuario.email }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Teléfono de contacto</label>
+                        <input type="text" name="telefono" class="form-control" value="{{ usuario.telefono|default:'' }}" placeholder="Ej: +54 11 ...">
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Dirección de Envío</label>
+                            <textarea name="direccion" class="form-control" rows="3">{{ usuario.direccion|default:'' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sucursal" class="form-label small fw-bold">Sucursal de Preferencia</label>
+                        <select name="sucursal" id="sucursal" class="form-select">
+                            <option value="">-- Selecciona una sucursal --</option>
+                            {% for s in sucursales %}
+                                <option value="{{ s.id }}" {% if usuario.sucursal.id == s.id %}selected{% endif %}>
+                                    {{ s.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Esto nos ayuda a gestionar mejor tus pedidos.</small>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="submit" class="btn btn-success px-5 fw-bold rounded-pill">
+                            GUARDAR CAMBIOS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

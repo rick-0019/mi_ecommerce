@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load socialaccount %} {% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4">
+                <h3 class="text-center fw-bold mb-4">Iniciar sesión</h3>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Usuario</label>
+                        <input type="text" name="username" class="form-control" placeholder="Tu usuario">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Contraseña</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-pill">
+                        INGRESAR
+                    </button>
+                </form>
+
+                <div class="position-relative my-4">
+                     <hr>
+                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 small text-muted fw-bold">O</span>
+                    </div>
+
+                    <div class="text-center mb-3">
+                        <a href="{% provider_login_url 'google' %}" 
+                        class="btn btn-outline-dark w-100 py-2 rounded-pill d-flex align-items-center justify-content-center fw-bold"
+                        style="border: 1px solid #dadce0; color: #3c4043; transition: background-color .2s;">
+                            
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
+                                alt="Google" 
+                                style="width: 18px; height: 18px; margin-right: 12px; flex-shrink: 0;">
+                            
+                            <span>Continuar con Google</span>
+                        </a>
+                    </div>   
+
+                <div class="text-center mt-3">
+                    <span class="small text-muted">¿No tienes cuenta?</span>
+                    <a href="{% url 'registro' %}" class="small text-success fw-bold text-decoration-none">Regístrate</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+¡Perfecto! Aquí tenés el "Checklist de Oro" para que tu sistema de Ecommerce + ERP sea una roca. Tomá nota (o guardalo en un archivo PRODUCCION.md en tu proyecto):
+
+1. Base de Datos Profesional
+Pasar de SQLite a PostgreSQL: Es el cambio #1. PostgreSQL permite que cientos de personas lean y escriban al mismo tiempo sin bloquearse.
+
+Backups automáticos: Programar una copia de seguridad diaria por si algo falla en el servidor.
+
+2. Servidor de Aplicación (Infraestructura)
+Nginx + Gunicorn: Nginx recibe las visitas y Gunicorn maneja los procesos de Django. Esto te permite atender múltiples pedidos en paralelo.
+
+HTTPS (Certificado SSL): Obligatorio para manejar datos de clientes y pagos (con Let's Encrypt es gratis).
+
+Variables de Entorno: Nunca dejar el SECRET_KEY o las claves de la base de datos en el código. Usar un archivo .env.
+
+3. Lógica de Negocio y Seguridad
+Transacciones Atómicas (transaction.atomic): Fundamental para el stock. Asegura que si dos personas compran el último producto al mismo tiempo, el sistema solo procese uno y no "venda de más".
+
+DEBUG = False: En producción, esto debe estar siempre en False para no mostrar errores técnicos a los usuarios.
+
+Validaciones de Stock: Doble chequeo de stock antes de confirmar el pago.
+
+4. Rendimiento y Archivos
+Imágenes Livianas: Ya las tenés (WebP es ideal), esto ahorra ancho de banda y velocidad de carga.
+
+Servidor de Estáticos: Configurar Whitenoise o un servicio externo para que los archivos CSS y JS vuelen.
+
+5. Control de Caja y Auditoría
+Métodos de Pago: Registrar siempre si fue Efectivo, Tarjeta o QR para que el cierre de caja cuadre.
+
+Logs de Errores: Usar algo como Sentry o simplemente revisar los logs del servidor para enterarte si a un cliente le falló un pago antes de que él te avise.
+
+De acuerdo, lo recordaré. Siempre puedes pedirme que olvide cosas o gestionar la información que haya guardado en tus ajustes.

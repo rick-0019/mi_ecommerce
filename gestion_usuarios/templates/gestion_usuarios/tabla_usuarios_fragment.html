@@ -1,0 +1,30 @@
+{% for u in usuarios %}
+<tr>
+    <td class="ps-4">
+        <div class="fw-bold text-primary">{{ u.username }}</div>
+        <small class="text-muted">{{ u.email }}</small>
+    </td>
+    <td>{{ u.first_name }} {{ u.last_name }}</td>
+    <td>
+        <span class="badge bg-light text-dark border">{{ u.get_rol_display }}</span>
+    </td>
+    <td class="text-center">
+        <div class="form-check form-switch d-flex justify-content-center">
+            <input class="form-check-input" type="checkbox" role="switch" 
+                   {% if u.is_active %}checked{% endif %}
+                   onchange="toggleUsuarioActivo('{{ u.id }}')">
+        </div>
+    </td>
+    <td class="text-center pe-4">
+        <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-sm btn-outline-primary px-3" onclick="abrirModalEditarUsuario('{{ u.id }}')">
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" class="text-center py-4 text-muted">No se encontraron usuarios.</td>
+</tr>
+{% endfor %}

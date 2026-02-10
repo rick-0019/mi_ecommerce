@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none text-muted">Inicio</a></li>
+            {% if categoria %}
+                {% for ancestro in categoria.get_ancestros %}
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'categoria' ancestro.slug %}" class="text-decoration-none text-muted">{{ ancestro.nombre }}</a>
+                    </li>
+                {% endfor %}
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">
+                    {% if categoria %}{{ categoria.nombre }}{% else %}{{ titulo_pagina }}{% endif %}
+                </li>
+            {% elif es_ofertas_page %}
+                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Ofertas</li>
+            {% endif %}
+        </ol>
+    </nav>
+
+    <div class="row">
+        <aside class="col-lg-2 col-md-3 pe-lg-4 border-end">
+            <h1 class="fw-bold h4 mb-3">
+                {% if categoria %}{{ categoria.nombre }}{% else %}{{ titulo_pagina }}{% endif %}
+            </h1>
+            
+            {# SECCIÓN DE BADGES (FILTROS ACTIVOS) #}
+            {% if marcas_sel or subs_sel %}
+            <div class="mb-4">
+                <p class="small fw-bold text-muted mb-2">Has seleccionado:</p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for m in marcas_sel %}
+                    <span class="badge rounded-1 border text-dark bg-light d-flex align-items-center fw-normal p-2">
+                        {{ m|upper }}
+                        <a href="?{% for ms in marcas_sel %}{% if ms != m %}marca={{ ms }}&{% endif %}{% endfor %}{% for ss in subs_sel %}subcategoria={{ ss }}&{% endfor %}" 
+                           class="btn-close ms-2" style="font-size: 0.5rem;"></a>
+                    </span>
+                    {% endfor %}
+
+                    {% for s_slug in subs_sel %}
+                    <span class="badge rounded-1 border text-white bg-success d-flex align-items-center fw-normal p-2">
+                        {% for sub in subcategorias_disponibles %}{% if sub.slug == s_slug %}{{ sub.nombre }}{% endif %}{% endfor %}
+                        <a href="?{% for ms in marcas_sel %}marca={{ ms }}&{% endfor %}{% for ss in subs_sel %}{% if ss != s_slug %}subcategoria={{ ss }}&{% endif %}{% endfor %}" 
+                           class="btn-close btn-close-white ms-2" style="font-size: 0.5rem;"></a>
+                    </span>
+                    {% endfor %}
+                </div>
+                <a href="?" class="d-block mt-2 small text-success text-decoration-none fw-bold">Limpiar todos</a>
+            </div>
+            {% endif %}
+
+            <form method="GET" id="filtro-form">
+                <div class="mb-4 mt-2">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-uppercase m-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Marca</h6>
+                        <i class="bi bi-chevron-up small text-muted"></i>
+                    </div>
+                    
+                    <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                        {% for nombre_marca in marcas_disponibles %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input custom-check" 
+                                       type="checkbox" 
+                                       name="marca" 
+                                       value="{{ nombre_marca }}" 
+                                       id="m-{{ forloop.counter }}"
+                                       {% if nombre_marca in marcas_sel %}checked{% endif %}
+                                       onchange="this.form.submit()">
+                                <label class="form-check-label small w-100" for="m-{{ forloop.counter }}" style="cursor: pointer;">
+                                    {{ nombre_marca|upper }}
+                                </label>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted small">No hay marcas disponibles.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if subcategorias_disponibles %}
+                <hr class="my-4 opacity-25">
+                <div class="mb-4">
+                    <h6 class="fw-bold text-uppercase m-0 mb-3" style="font-size: 0.75rem;">{% if es_ofertas_page %}Categoría{% else %}Sub-Categoría{% endif %}</h6>
+                    {% for sub in subcategorias_disponibles %}
+                    <div class="form-check mb-2">
+                        <input class="form-check-input custom-check" 
+                               type="checkbox" 
+                               name="subcategoria" 
+                               value="{{ sub.slug }}" 
+                               id="s-{{ forloop.counter }}"
+                               {% if sub.slug in subs_sel %}checked{% endif %}
+                               onchange="this.form.submit()">
+                        <label class="form-check-label small w-100" for="s-{{ forloop.counter }}" style="cursor: pointer;">
+                            {{ sub.nombre }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                 <!-- GAMA DE PRECIOS -->
+                <hr class="my-4 opacity-25">
+                <div class="mb-4">
+                    <h6 class="fw-bold text-uppercase m-0 mb-3" style="font-size: 0.75rem;">Gama de Precios</h6>
+                    
+                    <div id="price-slider" class="mb-3 mt-2"></div>
+                    
+                    <div class="d-flex justify-content-between small fw-bold text-secondary">
+                        <span id="price-min-display">$ {{ sel_min|stringformat:".2f" }}</span>
+                        <span id="price-max-display">$ {{ sel_max|stringformat:".2f" }}</span>
+                    </div>
+
+                    <!-- Inputs Ocultos -->
+                    <input type="hidden" name="min_price" id="input-min-price" value="{{ sel_min|stringformat:".2f" }}">
+                    <input type="hidden" name="max_price" id="input-max-price" value="{{ sel_max|stringformat:".2f" }}">
+                    <input type="hidden" name="orden" id="input-orden" value="{{ orden_actual }}">
+                </div>
+
+                <!-- ESTILOS Y SCRIPTS DEL SLIDER -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+                
+                <style>
+                    /* Custom Green Slider */
+                    .noUi-connect {
+                        background: #39ce66;
+                    }
+                    .noUi-horizontal {
+                        height: 6px;
+                    }
+                    .noUi-horizontal .noUi-handle {
+                        width: 18px;
+                        height: 18px;
+                        right: -9px;
+                        top: -7px;
+                        border-radius: 50%;
+                        background: #fff;
+                        border: 2px solid #39ce66;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                        cursor: pointer;
+                        outline: none;
+                    }
+                    .noUi-handle:before, .noUi-handle:after {
+                        display: none;
+                    }
+                </style>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var slider = document.getElementById('price-slider');
+                        if (!slider) return;
+
+                        // Función auxiliar para parsear valores de Django con seguridad
+                        function parseMoney(valStr) {
+                            if (!valStr) return 0;
+                            // Reemplazamos coma por punto para float standard
+                            var clean = valStr.toString().replace(',', '.');
+                            var num = parseFloat(clean);
+                            return isNaN(num) ? 0 : num;
+                        }
+
+                        // Obtenemos valores directos de variables (mejor que parsear stringformat)
+                        // Usamos toFixed para asegurar formato X.YY y luego parseamos
+                        var minLimit = parseMoney("{{ min_limit|stringformat:'.2f' }}");
+                        var maxLimit = parseMoney("{{ max_limit|stringformat:'.2f' }}");
+                        var selMin = parseMoney("{{ sel_min|stringformat:'.2f' }}");
+                        var selMax = parseMoney("{{ sel_max|stringformat:'.2f' }}");
+
+                        // Validación para evitar crash por rango nulo
+                        if (maxLimit <= minLimit) {
+                            maxLimit = minLimit + 1000; // Si hay 1 solo precio o 0, damos rango fake
+                        }
+
+                        // CLAMP: Aseguramos que lo seleccionado esté dentro del rango permitido
+                        // Si selMin viene de la URL (ej: 0) pero el minLimit es 2000, forzamos 2000
+                        if (selMin < minLimit) selMin = minLimit;
+                        if (selMin > maxLimit) selMin = maxLimit;
+                        
+                        if (selMax > maxLimit) selMax = maxLimit;
+                        if (selMax < minLimit) selMax = minLimit;
+
+                        // Seguridad final: min no puede ser mayor a max
+                        if (selMin > selMax) {
+                            var temp = selMin;
+                            selMin = selMax;
+                            selMax = temp;
+                        }
+
+                        // Cálculo dinámico del step
+                        var range = maxLimit - minLimit;
+                        var step = 1; 
+                        if (range >= 500000) step = 1000;
+                        else if (range >= 100000) step = 500;
+                        else if (range >= 10000) step = 100;
+                        else if (range >= 1000) step = 50;
+                        else if (range >= 100) step = 10;
+                        else step = 1;
+
+                        try {
+                            noUiSlider.create(slider, {
+                                start: [selMin, selMax],
+                                connect: true,
+                                range: {
+                                    'min': minLimit,
+                                    'max': maxLimit
+                                },
+                                step: step,
+                                tooltips: false, // Tooltips pueden molestar visualmente
+                                format: {
+                                    to: function (value) {
+                                        return Math.round(value * 100) / 100;
+                                    },
+                                    from: function (value) {
+                                        return Number(value);
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            console.error("Error creating slider:", e);
+                            return;
+                        }
+
+                        var minDisplay = document.getElementById('price-min-display');
+                        var maxDisplay = document.getElementById('price-max-display');
+                        var inputMin = document.getElementById('input-min-price');
+                        var inputMax = document.getElementById('input-max-price');
+                        var form = document.getElementById('filtro-form');
+
+                        // Actualizar textos al mover
+                        slider.noUiSlider.on('update', function (values, handle) {
+                            var val = parseFloat(values[handle]);
+                            var formatted = '$ ' + val.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            
+                            if (handle === 0) {
+                                minDisplay.innerText = formatted;
+                            } else {
+                                maxDisplay.innerText = formatted;
+                            }
+                        });
+
+                        // Enviar form al soltar (con debounce por si acaso user arrastra mucho)
+                        slider.noUiSlider.on('change', function (values, handle) {
+                            // Guardamos siempre con punto para que Python lo entienda bien
+                            inputMin.value = values[0];
+                            inputMax.value = values[1];
+                            if (form) form.submit();
+                        });
+                    });
+                </script>
+            </form>
+        </aside>
+
+        <main class="col-lg-10 col-md-9 ps-lg-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-2 rounded shadow-sm">
+                {# CORRECCIÓN: productos.paginator.count para mostrar el total real #}
+                <p class="text-muted small mb-0 ms-2"><strong>{{ productos.paginator.count }}</strong> productos encontrados</p>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted d-none d-md-block">Ordenar por:</label>
+                    <select class="form-select form-select-sm border-0 bg-transparent fw-bold" 
+                            style="width: auto; cursor: pointer;"
+                            onchange="document.getElementById('input-orden').value = this.value; document.getElementById('filtro-form').submit();">
+                        
+                        <option value="relevantes" {% if orden_actual == 'relevantes' %}selected{% endif %}>Más relevantes</option>
+                        <option value="menor_precio" {% if orden_actual == 'menor_precio' %}selected{% endif %}>Menor precio</option>
+                        <option value="mayor_precio" {% if orden_actual == 'mayor_precio' %}selected{% endif %}>Mayor precio</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+                {% for producto in productos %}
+                    <div class="col">
+                        {% include 'card_producto.html' with producto=producto %}
+                    </div>
+                {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <div class="p-5 border rounded bg-light">
+                            <i class="bi bi-search d-block mb-3 text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted">No encontramos productos con esos filtros.</p>
+                            {% if categoria %}
+                                <a href="{% url 'categoria' categoria.slug %}" class="btn btn-outline-success btn-sm">Ver todo en {{ categoria.nombre }}</a>
+                            {% else %}
+                                <a href="?" class="btn btn-outline-success btn-sm">Reiniciar filtros</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+          
+        </main>
+    </div>
+</div>
+
+<style>
+    /* Estilos de interactividad */
+    .card-hover { 
+        transition: transform 0.2s ease, box-shadow 0.2s ease; 
+    }
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+
+    /* Checkbox estilo Jumbo (Verde) */
+    .custom-check {
+        cursor: pointer;
+    }
+    .custom-check:checked { 
+        background-color: #39ce4d !important; 
+        border-color: #39ce4d !important; 
+    }
+    .custom-check:focus {
+        box-shadow: 0 0 0 0.25rem rgba(57, 206, 77, 0.2);
+    }
+
+    /* Scrollbar minimalista para las marcas */
+    aside div::-webkit-scrollbar {
+        width: 4px;
+    }
+    aside div::-webkit-scrollbar-track {
+        background: #f8f9fa;
+    }
+    aside div::-webkit-scrollbar-thumb {
+        background: #dee2e6;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}

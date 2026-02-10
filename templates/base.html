@@ -1,0 +1,777 @@
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mi Ecommerce{% endblock %}</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+<style>
+    :root {
+        --primary-color: #28a745;
+        --navbar-bg: #28a745;
+    }
+
+    /* Navbar General */
+    .navbar { 
+        background-color: var(--navbar-bg) !important;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        border-bottom: none !important;
+    }
+
+    .navbar-brand {
+        color: white !important;
+        font-size: 1.6rem;
+        letter-spacing: -0.5px;
+    }
+
+    .vr-separator {
+        border-left: 1px solid rgba(255, 255, 255, 0.3);
+        height: 35px;
+        margin: 0 15px;
+    }
+
+    /* Botón Categorías */
+    #dropdownCategorias {
+        color: white !important;
+        background: transparent !important;
+        border: none !important;
+        font-weight: 500;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        padding: 0;
+    }
+
+    #dropdownCategorias:hover { opacity: 0.9; }
+
+    /* Buscador como Píldora */
+    .search-container {
+        flex-grow: 1;
+        max-width: 750px;
+        margin: 0 20px;
+        position: relative;
+    }
+
+    #ajax-search-input {
+        border-radius: 50px !important;
+        border: none !important;
+        padding: 10px 25px !important;
+        font-size: 0.95rem;
+        width: 100%;
+        outline: none;
+    }
+
+    /* Links de Usuario y Carrito */
+    .nav-link-custom {
+        color: white !important;
+        text-decoration: none;
+        font-weight: 500;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.85rem;
+        margin-left: 20px;
+        transition: opacity 0.2s;
+    }
+
+    .nav-link-custom:hover { opacity: 0.8; }
+    .nav-link-custom i { font-size: 1.4rem; margin-bottom: -2px; }
+
+    /* Carrito Badge */
+    .cart-badge {
+        position: absolute;
+        top: -5px;
+        right: -8px;
+        background-color: #ffffff;
+        color: var(--primary-color);
+        font-weight: bold;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 50px;
+        border: 1px solid var(--primary-color);
+    }
+
+    /* MENU PRINCIPAL Y SUBMENUS */
+    .dropdown-menu {
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        border-radius: 0;
+        border: 1px solid #ddd !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+        padding: 0;
+        z-index: 1050;
+    }
+
+    .dropdown-item {
+        font-size: 0.9rem;
+        color: #333;
+        padding: 10px 20px;
+        border-bottom: 1px solid #f1f1f1;
+        transition: all 0.2s;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: var(--primary-color);
+        padding-left: 25px;
+    }
+
+    .dropdown-submenu { position: relative; }
+    .dropdown-submenu .submenu {
+        display: none;
+        position: absolute;
+        left: 100%;
+        top: 0;
+        min-width: 280px;
+        margin-top: -1px;
+    }
+
+    .dropdown-submenu:hover > .submenu { display: block; }
+    .dropdown-toggle::after { display: none; }
+
+    .dropdown-submenu .dropdown-menu {
+        top: 0;
+        left: 100%;
+        margin-top: -1px;
+    }
+
+    .dropdown-submenu:hover > .dropdown-menu { display: block !important; }
+    .dropdown-item:focus { background-color: #f8f9fa; }
+    
+    .dropdown-menu {
+        z-index: 2000 !important;
+    }
+
+    .navbar {
+        z-index: 1050; 
+    }
+
+    /* --- ESTILOS BUSCADOR AJAX --- */
+    #search-results-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 2000;
+        background: white;
+        border-radius: 0 0 12px 12px;
+        display: none;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .search-result-item {
+        padding: 12px 20px;
+        border-bottom: 1px solid #f8f9fa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+        background-color: #f1f8f4;
+    }
+
+    .search-result-info .name {
+        display: block;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 2px;
+    }
+
+    .search-result-info .sku {
+        font-size: 0.75rem;
+        color: #95a5a6;
+    }
+
+    .search-result-price {
+        font-weight: bold;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+    }
+
+    /* Mejora para el contenedor de resultados */
+    #search-results-container {
+        backdrop-filter: blur(8px); /* Desenfoque de fondo */
+        background: rgba(255, 255, 255, 0.95); 
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+        transition: all 0.3s ease;
+    }
+
+    /* Hover más suave en los items */
+    .search-result-item:hover {
+        background-color: rgba(40, 167, 69, 0.08); /* Usando tu primary-color con transparencia */
+        border-left: 4px solid var(--primary-color);
+        padding-left: 16px; /* Efecto de desplazamiento */
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #search-results-container {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    /* --- PAGINACIÓN VERDE PERSONALIZADA --- */
+
+/* Estilo para los botones normales (Anterior, Siguiente y Números) */
+.custom-page-link {
+    color: #39ce66 !important;
+    background-color: #ffffff !important;
+    border-color: #dee2e6 !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Efecto al pasar el mouse por los botones normales */
+.custom-page-link:hover {
+    background-color: #f8f9fa !important;
+    color: #2da351 !important;
+    border-color: #39ce66 !important;
+}
+
+/* Estilo para el número de página ACTIVO */
+.custom-active-link {
+    background-color: #39ce66 !important;
+    border-color: #39ce66 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+}
+
+/* Eliminar el resplandor azul de Bootstrap al hacer clic */
+.page-link:focus {
+    box-shadow: 0 0 0 0.25rem rgba(57, 206, 102, 0.25) !important;
+}
+
+/* Estilo para el pequeño texto inferior */
+.cursor-pointer:hover {
+    color: #39ce66 !important;
+    cursor: pointer;
+}
+
+.page-item:first-child .page-link {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.page-item:last-child .page-link {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* --- ESTILO CERTIFICADOS (PÍLDORAS GRISES) --- */
+.certificado-badge {
+    display: flex;
+    align-items: center;
+    background-color: #f2f2f2;
+    padding: 4px 12px 4px 4px; /* Padding izquierdo menor por el círculo */
+    border-radius: 50px;
+    border: 1px solid #e0e0e0;
+    font-size: 0.8rem;
+    color: #444;
+}
+
+.certificado-badge .icon-circle {
+    background: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* --- ESTILO OCTÓGONOS (NEGROS OFICIALES) --- */
+.octogono-badge {
+    background-color: #000;
+    color: #fff;
+    padding: 10px;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    line-height: 1.1;
+}
+
+.octogono-text {
+    font-size: 0.65rem;
+    font-family: 'Arial Black', sans-serif;
+}
+
+.octogono-text strong {
+    font-size: 0.75rem;
+}
+
+/* --- ESTILO FAVORITOS --- */
+.btn-favorito {
+    width: 38px;
+    height: 38px;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #888;
+    position: relative;
+    text-decoration: none !important;
+    flex-shrink: 0; /* Evita que se deforme en flexbox */
+}
+
+.btn-favorito:hover {
+    background-color: #ffffff;
+    color: #e63946;
+    border-color: #e63946;
+    box-shadow: 0 4px 10px rgba(230, 57, 70, 0.2);
+}
+
+/* Estado Activo (Clickeado) */
+.btn-favorito.active {
+    background-color: #ffffff;
+    color: #e63946 !important;
+    border-color: #e63946 !important;
+    box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
+}
+
+.btn-favorito.active i::before {
+    content: "\f415"; /* bi-heart-fill */
+}
+
+.btn-favorito i {
+    font-size: 1.2rem;
+    transition: transform 0.2s ease;
+}
+
+.btn-favorito:hover i {
+    transform: scale(1.15);
+}
+
+/* Borde VERDE en la card */
+.card-producto-favorito {
+    transition: all 0.3s ease;
+    border: 1px solid #eee !important;
+}
+
+.card-producto-favorito:hover {
+    border-color: #39ce66 !important; /* Verde matches con el botón Agregar */
+    box-shadow: 0 8px 15px rgba(57, 206, 102, 0.15) !important;
+}
+
+</style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm">
+    <div class="container">
+        <!-- 1. LOGO -->
+        <a class="navbar-brand fw-bold" href="/">MI LOGO</a>
+        
+        <!-- SEPARADOR VERTICAL -->
+        <div class="vr-separator d-none d-lg-block"></div>
+
+        <!-- 2. CATEGORÍAS -->
+        <div class="dropdown">
+            <button class="btn" type="button" id="dropdownCategorias" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-list me-2"></i> Categorías
+            </button>
+            <ul class="dropdown-menu shadow border-0 py-0 mt-3" aria-labelledby="dropdownCategorias" style="min-width: 250px;">
+                {% for cat_principal in categorias_padre %}
+                <li class="dropdown-submenu position-relative">
+                    <a class="dropdown-item py-2 border-bottom d-flex justify-content-between align-items-center" 
+                       href="{% url 'categoria' cat_principal.slug %}">
+                        {{ cat_principal.nombre }}
+                        {% if cat_principal.subcategorias.exists %}
+                            <i class="bi bi-chevron-right small text-muted"></i>
+                        {% endif %}
+                    </a>
+                    
+                    {% if cat_principal.subcategorias.exists %}
+                    <ul class="dropdown-menu submenu shadow border-0 py-0">
+                        {% for sub in cat_principal.subcategorias.all %}
+                        {% if sub.activa %}
+                        <li class="dropdown-submenu position-relative">
+                            <a class="dropdown-item py-2 border-bottom d-flex justify-content-between align-items-center" 
+                               href="{% url 'categoria' sub.slug %}">
+                                {{ sub.nombre }}
+                                {% if sub.subcategorias.exists %}
+                                    <i class="bi bi-chevron-right small text-muted"></i>
+                                {% endif %}
+                            </a>
+
+                            {% if sub.subcategorias.exists %}
+                            <ul class="dropdown-menu submenu shadow border-0 py-0">
+                                {% for sub_sub in sub.subcategorias.all %}
+                                {% if sub_sub.activa %}
+                                <li>
+                                    <a class="dropdown-item py-2 border-bottom" 
+                                       href="{% url 'categoria' sub_sub.slug %}">
+                                        {{ sub_sub.nombre }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <i class="bi bi-list fs-1"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <!-- 3. BUSCADOR -->
+            <div class="search-container mx-auto">
+                <form action="{% url 'home' %}" method="GET" class="w-100" id="search-form">
+                    <input 
+                        type="text" 
+                        id="ajax-search-input"
+                        name="q" 
+                        placeholder="Buscar productos..." 
+                        value="{{ request.GET.q|default:'' }}"
+                        autocomplete="off"
+                    >
+                </form>
+                <div id="search-results-container"></div>
+            </div>
+
+            <!-- 4. LOGIN Y CARRITO -->
+            <div class="d-flex align-items-center">
+                {% if user.is_authenticated %}
+                    {% get_social_accounts user as accounts %}
+                    <div class="dropdown">
+                        <a class="nav-link-custom dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if accounts.google %}
+                                <img src="{{ accounts.google.0.extra_data.picture }}" 
+                                     alt="Perfil" 
+                                     class="rounded-circle" 
+                                     style="width: 24px; height: 24px; object-fit: cover; border: 1px solid white;">
+                            {% else %}
+                                <i class="bi bi-person"></i>
+                            {% endif %}
+                            <span>{{ user.first_name|default:user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{% url 'lista_favoritos' %}"><i class="bi bi-heart me-2"></i> Mis Favoritos</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-seam me-2"></i> Mis Compras</a></li>
+                            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="bi bi-gear me-2"></i> Mi Perfil</a></li>
+                            {% if user.rol != 'CL' %}
+                                <li><hr class="dropdown-divider"></li>
+                                
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'logout' %}" method="post" class="px-3 py-1">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Cerrar Sesión</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link-custom">
+                        <i class="bi bi-person"></i>
+                        <span>Ingresar</span>
+                    </a>
+                {% endif %}
+
+                <a href="{% url 'lista_favoritos' %}" class="nav-link-custom position-relative ms-4 d-none d-lg-flex" title="Mis Favoritos">
+                    <i class="bi bi-heart"></i>
+                    <span>Favoritos</span>
+                    <span id="favoritos-badge" class="cart-badge {% if not user_favoritos_ids %}d-none{% endif %}">
+                        {{ user_favoritos_ids|length }}
+                    </span>
+                </a>
+
+                <a href="{% url 'carrito_detalle' %}" id="carrito-contenedor" class="nav-link-custom position-relative ms-4">
+                    <i class="bi bi-cart"></i>
+                    <span>Carrito</span>
+                    <span id="carrito-badge" class="cart-badge {% if not unidades_totales_carrito %}d-none{% endif %}">
+                        {{ unidades_totales_carrito|default:0 }}
+                    </span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+    <main class="container py-4" style="min-height: 80vh;">
+    {% if messages %}
+        <div class="container mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+
+    {% if productos.paginator.num_pages > 1 %}
+        <div class="container mt-4">
+            {% include 'paginacion.html' %}
+        </div>
+    {% endif %}
+</main>
+
+    <footer class="bg-dark text-white pt-5 pb-4 mt-5">
+        <div class="container text-center text-md-start">
+            <div class="row text-center text-md-start">
+                <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold text-success">Mi Ecommerce</h5>
+                    <p>Tu tienda de confianza con stock real en sucursales.</p>
+                </div>
+                <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold text-success">Contacto</h5>
+                    <p><i class="bi bi-house-door-fill me-2"></i> Madero, Buenos Aires</p>
+                    <p><i class="bi bi-envelope-fill me-2"></i> info@tienda.com</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+
+<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('ajax-search-input');
+                const resultsContainer = document.getElementById('search-results-container');
+                let timeout = null;
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(timeout);
+                        const query = this.value.trim();
+
+                        if (query.length < 2) {
+                            resultsContainer.style.display = 'none';
+                            return;
+                        }
+
+                        timeout = setTimeout(() => {
+                            resultsContainer.innerHTML = `
+                                <div class="p-3 shadow-lg bg-white" style="border-radius: 15px;">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border text-success" role="status"></div>
+                                        <p class="mt-2 text-muted small">Buscando productos...</p>
+                                    </div>
+                                </div>`;
+                            resultsContainer.style.display = 'block';
+
+                            fetch(`/ventas/buscar/?q=${encodeURIComponent(query)}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (!data.productos || data.productos.length === 0) {
+                                        resultsContainer.innerHTML = `<div class="p-4 shadow-lg bg-white text-center text-muted" style="border-radius: 15px;">No se encontraron productos</div>`;
+                                        return;
+                                    }
+
+                                    // Modificado para mostrar data.total en el link
+                                    resultsContainer.innerHTML = `
+                                        <div class="p-3 shadow-lg bg-white" style="border-radius: 15px; min-width: 600px;">
+                                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                                <strong class="text-muted small">Sugerencias</strong>
+                                                <a href="/?q=${encodeURIComponent(query)}" class="text-success fw-bold text-decoration-none small">
+                                                    Ver los ${data.total} resultados
+                                                </a>
+                                            </div>
+                                            <div class="row g-2" id="mini-cards-grid"></div>
+                                        </div>`;
+
+                                    const grid = document.getElementById('mini-cards-grid');
+
+                                    data.productos.forEach(item => {
+                                        grid.innerHTML += `
+                                            <div class="col-3">
+                                                <div class="card h-100 border shadow-sm card-producto-favorito" style="border-radius: 12px; overflow: hidden; background: #fff; padding: 10px;">
+                                                    <div class="text-end mb-1">
+                                                        <a href="#" class="btn-favorito no-tooltip" data-producto-id="${item.id}" style="width: 28px; height: 28px;">
+                                                            <i class="bi bi-heart" style="font-size: 0.9rem;"></i>
+                                                        </a>
+                                                    </div>
+                                                    <a href="/producto/${item.slug}/" class="text-decoration-none">
+                                                        <div class="d-flex align-items-center justify-content-center bg-light" style="height: 110px; padding: 10px; border-radius: 8px;">
+                                                            <img src="${item.imagen_url}" class="img-fluid" style="max-height: 100%; object-fit: contain;">
+                                                        </div>
+                                                    </a>
+                                                    <div class="card-body p-2 d-flex flex-column">
+                                                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.55rem;">${item.marca || ''}</small>
+                                                        <h6 class="text-dark mb-1" style="font-size: 0.75rem; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 500; line-height: 1.2;">
+                                                            ${item.nombre}
+                                                        </h6>
+                                                        <div class="mt-auto">
+                                                            <span class="fw-bold d-block text-dark" style="font-size: 0.9rem;">$ ${item.precio}</span>
+                                                            <button class="btn btn-sm w-100 mt-2 fw-bold text-white" 
+                                                                    onclick="agregarAlCarritoAjax(event, '${item.id}')"
+                                                                    style="background-color: #39ce66; border: none; border-radius: 6px; font-size: 0.7rem; padding: 4px;">
+                                                                AGREGAR
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>`;
+                                    });
+                                })
+                                .catch(error => console.error('Error AJAX:', error));
+                        }, 300);
+                    });
+                }
+
+                document.addEventListener('click', (e) => {
+                    if (resultsContainer && !resultsContainer.contains(e.target) && e.target !== searchInput) {
+                        resultsContainer.style.display = 'none';
+                    }
+                });
+            });
+
+            // FUNCIÓN GLOBAL MEJORADA
+            function agregarAlCarritoAjax(event, productoId) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                const btn = event.currentTarget || event.target;
+                if (btn.disabled) return;
+                btn.disabled = true;
+
+                const originalContent = btn.innerHTML;
+
+                fetch(`/carrito/agregar/${productoId}/`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        let badge = document.getElementById('carrito-badge');
+
+                    if (badge) {
+                        badge.innerText = data.unidades_totales; // o la variable que devuelva tu AJAX
+                        badge.classList.remove('d-none'); // Asegura que se vea
+                    } else {
+                        // Si por alguna razón no existe, lo inyectamos SOLO en el contenedor del carrito
+                        const contenedor = document.getElementById('carrito-contenedor');
+                        if (contenedor) {
+                            badge = document.createElement('span');
+                            badge.id = 'carrito-badge';
+                            badge.className = 'cart-badge';
+                            badge.innerText = data.unidades_totales;
+                            contenedor.appendChild(badge);
+                        }
+                    }
+
+                        if (badge) {
+                            badge.innerText = data.unidades_totales;
+                            badge.style.transform = 'scale(1.5)';
+                            setTimeout(() => badge.style.transform = 'scale(1)', 300);
+                        }
+
+                        btn.innerText = '¡LISTO!';
+                        btn.style.backgroundColor = '#28a745';
+
+                        setTimeout(() => {
+                            btn.innerHTML = originalContent;
+                            btn.style.backgroundColor = '#39ce66';
+                            btn.disabled = false;
+                        }, 1000);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    btn.disabled = false;
+                });
+            }
+
+            // FUNCIÓN PARA TOGGLE DE FAVORITOS (AJAX)
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.btn-favorito');
+                if (btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const productoId = btn.getAttribute('data-producto-id');
+                    if (!productoId) return;
+
+                    fetch(`/favoritos/toggle/${productoId}/`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => {
+                        if (response.status === 401 || response.url.includes('login')) {
+                            window.location.href = "{% url 'login' %}?next=" + window.location.pathname;
+                            return;
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && (data.status === 'added' || data.status === 'removed')) {
+                            // Actualizar el contador en el navbar
+                            const badge = document.getElementById('favoritos-badge');
+                            if (badge) {
+                                badge.textContent = data.count;
+                                if (data.count > 0) {
+                                    badge.classList.remove('d-none');
+                                } else {
+                                    badge.classList.add('d-none');
+                                }
+                                
+                                // Animación al badge
+                                badge.style.transform = 'scale(1.5)';
+                                setTimeout(() => badge.style.transform = 'scale(1)', 300);
+                            }
+
+                            // Sincronizar todos los botones del mismo producto en la página
+                            const todosLosBotones = document.querySelectorAll(`.btn-favorito[data-producto-id="${productoId}"]`);
+                            todosLosBotones.forEach(b => {
+                                if (data.status === 'added') {
+                                    b.classList.add('active');
+                                } else {
+                                    b.classList.remove('active');
+                                }
+                                
+                                // Animación de pulso
+                                b.style.transform = 'scale(1.3)';
+                                setTimeout(() => b.style.transform = 'scale(1)', 200);
+                            });
+                        }
+                    })
+                    .catch(err => console.error('Error Favoritos:', err));
+                }
+            });
+    </script>
+
+<style>
+/* Animación para que el numerito del carrito "salte" al agregar */
+.badge { transition: transform 0.2s ease; }
+.pumping { transform: scale(1.4); color: yellow !important; }
+</style>
+</body>
+</html>

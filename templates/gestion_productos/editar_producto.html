@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="display-6 mb-0">Editar Producto: <strong class="text-primary">{{ producto.nombre }}</strong></h2>
+        <a href="{% url 'gestion_interna:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Dashboard
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+        <div class="card-header bg-primary text-white p-3">
+            <h5 class="mb-0 fw-bold small text-uppercase">Formulario de Edición</h5>
+        </div>
+            <!-- Mensajes de Error Globales -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger shadow-sm">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="needs-validation">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <!-- Fila 1: Nombre, Categoría, Marca -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.nombre.label }}</label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.categoria.label }}</label>
+                        <div class="position-relative">
+                            <div class="d-none">{{ form.categoria }}</div>
+                            <div class="input-group">
+                                <input type="text" id="categoria_search" class="form-control {% if form.categoria.errors %}is-invalid{% endif %}" autocomplete="off" placeholder="Buscar categoría...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="limpiarSeleccion('categoria')"><i class="bi bi-x mb-0"></i></button>
+                            </div>
+                            <div id="categoria_results" class="list-group position-absolute w-100 shadow" style="display:none; z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                            <small id="categoria_selected_text" class="text-success fw-bold d-block mt-1"></small>
+                            {% if form.categoria.errors %}<div class="text-danger small mt-1">{{ form.categoria.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.marca.label }}</label>
+                        <div class="position-relative">
+                            <div class="d-none">{{ form.marca }}</div>
+                            <div class="input-group">
+                                <input type="text" id="marca_search" class="form-control {% if form.marca.errors %}is-invalid{% endif %}" autocomplete="off" placeholder="Buscar marca...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="limpiarSeleccion('marca')"><i class="bi bi-x mb-0"></i></button>
+                            </div>
+                            <div id="marca_results" class="list-group position-absolute w-100 shadow" style="display:none; z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                            <small id="marca_selected_text" class="text-success fw-bold d-block mt-1"></small>
+                            {% if form.marca.errors %}<div class="text-danger small mt-1">{{ form.marca.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- IVA, Código y Medidas -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.iva.label }}</label>
+                        {{ form.iva }}
+                        {% if form.iva.errors %}<div class="text-danger small mt-1">{{ form.iva.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.codigo_barras.label }}</label>
+                        {{ form.codigo_barras }}
+                        {% if form.codigo_barras.errors %}<div class="text-danger small mt-1">{{ form.codigo_barras.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.peso_kg.label }}</label>
+                        {{ form.peso_kg }}
+                        {% if form.peso_kg.errors %}<div class="text-danger small mt-1">{{ form.peso_kg.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.volumen_m3.label }}</label>
+                        {{ form.volumen_m3 }}
+                        {% if form.volumen_m3.errors %}<div class="text-danger small mt-1">{{ form.volumen_m3.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Envase y Contenido -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.tipo_envase.label }}</label>
+                        {{ form.tipo_envase }}
+                        {% if form.tipo_envase.errors %}<div class="text-danger small mt-1">{{ form.tipo_envase.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.contenido_neto.label }}</label>
+                        {{ form.contenido_neto }}
+                        {% if form.contenido_neto.errors %}<div class="text-danger small mt-1">{{ form.contenido_neto.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.unidad_medida.label }}</label>
+                        {{ form.unidad_medida }}
+                        {% if form.unidad_medida.errors %}<div class="text-danger small mt-1">{{ form.unidad_medida.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Salud y Marketing -->
+                    <div class="col-md-12 bg-light p-3 rounded">
+                        <div class="row g-3">
+                            <div class="col-md-6 border-end">
+                                <label class="small fw-bold text-uppercase text-muted d-block mb-2">Salud y Dieta</label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check form-switch">
+                                        {{ form.es_vegano }}
+                                        <label class="form-check-label small" for="{{ form.es_vegano.id_for_label }}">{{ form.es_vegano.label }}</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.es_vegetariano }}
+                                        <label class="form-check-label small" for="{{ form.es_vegetariano.id_for_label }}">{{ form.es_vegetariano.label }}</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.es_sin_tacc }}
+                                        <label class="form-check-label small" for="{{ form.es_sin_tacc.id_for_label }}">{{ form.es_sin_tacc.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-uppercase text-muted d-block mb-2">Visibilidad / Etiquetas</label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check form-switch">
+                                        {{ form.es_oferta }}
+                                        <label class="form-check-label small" for="{{ form.es_oferta.id_for_label }}">OFERTA</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.es_novedad }}
+                                        <label class="form-check-label small" for="{{ form.es_novedad.id_for_label }}">NOVEDAD</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.es_proximamente }}
+                                        <label class="form-check-label small" for="{{ form.es_proximamente.id_for_label }}">PRÓX</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.exclusivo_online }}
+                                        <label class="form-check-label small" for="{{ form.exclusivo_online.id_for_label }}">EXCLU. ONLINE</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.ahorrames }}
+                                        <label class="form-check-label small" for="{{ form.ahorrames.id_for_label }}">AHORRAMES</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        {{ form.esta_activo }}
+                                        <label class="form-check-label small fw-bold text-primary" for="{{ form.esta_activo.id_for_label }}">ACTIVO</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.octogono_advertencia.label }}</label>
+                        {{ form.octogono_advertencia }}
+                        {% if form.octogono_advertencia.errors %}<div class="text-danger small mt-1">{{ form.octogono_advertencia.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Precios -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-success">{{ form.precio_venta.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-success text-white">$</span>
+                            {{ form.precio_venta }}
+                        </div>
+                        {% if form.precio_venta.errors %}<div class="text-danger small mt-1">{{ form.precio_venta.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.precio_costo.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.precio_costo }}
+                        </div>
+                        {% if form.precio_costo.errors %}<div class="text-danger small mt-1">{{ form.precio_costo.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Historial de Precios (Editable Formset) -->
+                    <div class="col-12 mt-3">
+                        <div class="card border-0 shadow-sm" style="border-radius: 10px;">
+                            <div class="card-header bg-light border-bottom py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 small fw-bold text-uppercase text-muted"><i class="bi bi-clock-history me-2"></i>Historial de Precios</h6>
+                                <span class="badge bg-info text-dark" style="font-size: 0.7rem;">Editar o agregar nuevos registros</span>
+                            </div>
+                            <div class="card-body p-0">
+                                {{ precio_formset.management_form }}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3">Venta ($)</th>
+                                                <th>Regular ($)</th>
+                                                <th>Costo ($)</th>
+                                                <th>Oferta ($)</th>
+                                                <th class="text-center">Actual?</th>
+                                                <th class="text-center">Quitar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p_form in precio_formset %}
+                                            <tr {% if p_form.instance.es_actual %}class="table-success"{% endif %}>
+                                                <td class="ps-3">
+                                                    {{ p_form.precio_venta }}
+                                                    {{ p_form.precio_venta.errors }}
+                                                </td>
+                                                <td>
+                                                    {{ p_form.precio_regular }}
+                                                    {{ p_form.precio_regular.errors }}
+                                                </td>
+                                                <td>
+                                                    {{ p_form.precio_costo }}
+                                                    {{ p_form.precio_costo.errors }}
+                                                </td>
+                                                <td>
+                                                    {{ p_form.precio_oferta }}
+                                                    {{ p_form.precio_oferta.errors }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ p_form.es_actual }}
+                                                    {% if p_form.instance.fecha_inicio %}
+                                                        <small class="d-block text-muted" style="font-size: 0.65rem;">{{ p_form.instance.fecha_inicio|date:"d/m/y" }}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ p_form.DELETE }}
+                                                </td>
+                                                {% for hidden in p_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Descripciones y Specs -->
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.descripcion_breve.label }}</label>
+                        {{ form.descripcion_breve }}
+                        {% if form.descripcion_breve.errors %}<div class="text-danger small mt-1">{{ form.descripcion_breve.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.descripcion_detallada.label }}</label>
+                        {{ form.descripcion_detallada }}
+                        {% if form.descripcion_detallada.errors %}<div class="text-danger small mt-1">{{ form.descripcion_detallada.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.especificaciones.label }}</label>
+                        {{ form.especificaciones }}
+                        {% if form.especificaciones.errors %}<div class="text-danger small mt-1">{{ form.especificaciones.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Imagen Principal -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Imagen Principal</label>
+                        {% if producto.imagen_principal %}
+                            <div class="mb-2">
+                                <img src="{{ producto.imagen_principal.url }}" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        {% endif %}
+                        {{ form.imagen_principal }}
+                        {% if form.imagen_principal.errors %}<div class="text-danger small mt-1">{{ form.imagen_principal.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Stock Formset -->
+                    <div class="card shadow-sm border-0 mb-4 mt-4">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 small fw-bold">STOCKS POR SUCURSAL</h5>
+                            <div class="d-flex align-items-center gap-3">
+                                {% if request.user.rol == 'SA' %}
+                                <button type="button" class="btn btn-sm btn-success fw-bold" id="add-stock-btn">
+                                    <i class="bi bi-plus-circle me-1"></i>AGREGAR SUCURSAL
+                                </button>
+                                {% endif %}
+                                {% if request.user.rol != 'SA' %}
+                                    <span class="badge bg-info text-dark" style="font-size: 0.7rem;">
+                                        <i class="bi bi-shield-lock-fill me-1"></i>Solo podés editar tu sucursal ({{ request.user.sucursal.nombre }})
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body bg-light" id="stock-form-container">
+                            {{ stock_formset.management_form }}
+                            {% for s_form in stock_formset %}
+                                <div class="stock-form-row row g-2 align-items-end mb-3 border-bottom pb-2">
+                                    <div class="col-md-3">
+                                        <small class="fw-bold d-block text-muted">Sucursal</small>
+                                        {% if request.user.rol != 'SA' %}
+                                            <div class="form-control form-control-sm bg-light fw-bold text-primary border-0">
+                                                {{ request.user.sucursal.nombre }}
+                                            </div>
+                                            <div class="d-none">{{ s_form.sucursal }}</div>
+                                        {% else %}
+                                            {{ s_form.sucursal }}
+                                        {% endif %}
+                                        {{ s_form.sucursal.errors }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="fw-bold d-block text-muted">Cantidad</small>
+                                        {{ s_form.cantidad }}
+                                        {{ s_form.cantidad.errors }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="fw-bold d-block text-muted">Pasillo</small>
+                                        {{ s_form.ubicacion_pasillo }}
+                                        {{ s_form.ubicacion_pasillo.errors }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="fw-bold d-block text-muted">Alerta Mín</small>
+                                        {{ s_form.stock_minimo }}
+                                        {{ s_form.stock_minimo.errors }}
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        {{ s_form.DELETE }} <small>Quitar</small>
+                                    </div>
+                                    {% for hidden in s_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Template para nueva fila (Hidden) -->
+                        <div id="empty-stock-form" class="d-none">
+                            <div class="stock-form-row row g-2 align-items-end mb-3 border-bottom pb-2">
+                                <div class="col-md-3">
+                                    <small class="fw-bold d-block text-muted">Sucursal</small>
+                                    {{ stock_formset.empty_form.sucursal }}
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="fw-bold d-block text-muted">Cantidad</small>
+                                    {{ stock_formset.empty_form.cantidad }}
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="fw-bold d-block text-muted">Pasillo</small>
+                                    {{ stock_formset.empty_form.ubicacion_pasillo }}
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="fw-bold d-block text-muted">Alerta Mín</small>
+                                    {{ stock_formset.empty_form.stock_minimo }}
+                                </div>
+                                <div class="col-md-2 text-center text-danger">
+                                    <button type="button" class="btn btn-link btn-sm text-danger p-0" onclick="this.closest('.stock-form-row').remove()">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Galería Formset -->
+                    <div class="card shadow-sm border-0 mb-4 mt-4">
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                            <h5 class="mb-0 small fw-bold">GALERÍA</h5>
+                            {% if formset.non_form_errors %}<span class="badge bg-danger">Error: {{ formset.non_form_errors.as_text }}</span>{% endif %}
+                        </div>
+                        <div class="card-body">
+                            {{ formset.management_form }}
+                            {% for form_img in formset %}
+                                <div class="row align-items-center mb-3 border-bottom pb-2">
+                                    <div class="col-md-8">
+                                        {% if form_img.instance.imagen %}
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <img src="{{ form_img.instance.imagen.url }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                                <small class="text-muted">{{ form_img.instance.imagen.name|truncatechars:30 }}</small>
+                                            </div>
+                                        {% endif %}
+                                        {{ form_img.imagen }}
+                                        {{ form_img.imagen.errors }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Orden</small>
+                                        {{ form_img.orden }}
+                                        {{ form_img.orden.errors }}
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        {{ form_img.DELETE }} <small>Eliminar</small>
+                                    </div>
+                                    {% for hidden in form_img.hidden_fields %}{{ hidden }}{% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
+                        <a href="{% url 'gestion_interna:dashboard' %}" class="btn btn-light px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-sm" style="border-radius: 10px;">
+                            <i class="bi bi-save me-2"></i>GUARDAR CAMBIOS
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/dashboard_logic.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        initSearchWidget('categoria');
+        initSearchWidget('marca');
+
+        // Lógica para agregar stock dinámicamente
+        const addBtn = document.getElementById('add-stock-btn');
+        const stockPrefix = '{{ stock_formset.prefix }}';
+        
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                const container = document.getElementById('stock-form-container');
+                const totalForms = document.getElementById(`id_${stockPrefix}-TOTAL_FORMS`);
+                const currentCount = parseInt(totalForms.value);
+                
+                const template = document.getElementById('empty-stock-form').innerHTML;
+                const newRowHtml = template.replace(/__prefix__/g, currentCount);
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newRowHtml.trim();
+                container.appendChild(tempDiv.firstChild);
+                
+                totalForms.value = currentCount + 1;
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,843 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="display-6 mb-0">Gestión: <strong class="text-primary">{{ sucursal.nombre|default:"Principal" }}</strong></h2>
+        <span class="badge bg-dark p-2 fs-6 shadow-sm"><i class="bi bi-person-badge me-2"></i>{{ request.user.get_rol_display }}</span>
+    </div>
+
+    <div class="row mb-4 align-items-end g-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(45deg, #ffc107, #ffdb6e); border-radius: 15px;">
+                <div class="card-body p-4 text-dark text-center">
+                    <h5 class="card-title fw-bold opacity-75 small text-uppercase mb-1">Pendientes</h5>
+                    <p class="display-5 fw-bold mb-0">{{ pedidos.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(45deg, #198754, #28a745); border-radius: 15px;">
+                <div class="card-body p-4 text-center">
+                    <h5 class="card-title fw-bold opacity-100 small text-uppercase mb-1">Procesados</h5>
+                    <p class="display-5 fw-bold mb-0">{{ procesados.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(45deg, #0d6efd, #0dcaf0); border-radius: 15px;">
+                <div class="card-body p-4 text-center">
+                    <h5 class="card-title fw-bold opacity-100 small text-uppercase mb-1">Catálogo</h5>
+                    <p class="display-5 fw-bold mb-0">{{ total_productos }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(45deg, #6f42c1, #8957e5); border-radius: 15px;">
+                <div class="card-body p-4 text-center">
+                    <h5 class="card-title fw-bold opacity-100 small text-uppercase mb-1">Movimientos</h5>
+                    <p class="display-5 fw-bold mb-0">{{ total_transferencias }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active btn-tab-pendiente me-2 shadow-sm px-4" id="pills-pendientes-tab" data-bs-toggle="pill" data-bs-target="#pills-pendientes" type="button">
+                <i class="bi bi-cart-check me-1"></i> GESTIÓN PEDIDOS
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link btn-tab-producto shadow-sm px-4" id="pills-productos-tab" data-bs-toggle="pill" data-bs-target="#pills-productos" type="button">
+                <i class="bi bi-box-seam me-1"></i> GESTIÓN PRODUCTOS
+            </button>
+        </li>
+        {% if user.rol == 'SA' or user.rol == 'AS' %}
+        <li class="nav-item">
+            <button class="nav-link shadow-sm px-4 ms-2" 
+                id="pills-usuarios-tab" 
+                data-bs-toggle="pill" 
+                data-bs-target="#pills-usuarios" 
+                type="button" 
+                onclick="cargarUsuarios()"
+                style="background-color: #2c3e50; color: white;">
+                <i class="bi bi-people me-1"></i> GESTIÓN USUARIOS
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+            <button class="nav-link btn-tab-transferencia shadow-sm px-4 ms-2" 
+                id="pills-transferencias-tab" 
+                data-bs-toggle="pill" 
+                data-bs-target="#pills-transferencias" 
+                type="button" 
+                onclick="cargarTransferencias()"
+                style="background-color: #6f42c1; color: white;">
+                <i class="bi bi-truck me-1"></i> TRANSFERENCIAS
+            </button>
+        </li>
+    </ul>
+    <div id="contenedor-dinamico-transferencias" class="mt-3"></div>
+
+    <div class="tab-content" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="pills-pendientes">
+            <!-- PENDIENTES -->
+            <div class="card shadow-sm border-0 overflow-hidden mb-4" style="border-radius: 15px;">
+                <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold small text-uppercase">Pendientes de Preparación</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                            <input type="text" id="buscadorPedidosLocales" class="form-control border-0 bg-light" placeholder="Filtrar pedidos locales...">
+                        </div>
+                        <span class="badge bg-warning text-dark">{{ pedidos.count }}</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small fw-bold">
+                            <tr>
+                                <th class="ps-4"># PEDIDO</th>
+                                <th>CLIENTE</th>
+                                <th>ORIGEN / MODALIDAD</th>
+                                <th class="text-end">TOTAL</th>
+                                <th class="text-center">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pedidos %}
+                            <tr class="fila-pedido">
+                                <td class="ps-4 fw-bold text-primary">#{{ p.nro_pedido }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ p.cliente }}</div>
+                                    <small class="text-muted"><i class="bi bi-person"></i> {{ p.vendedor|default:"Sistema" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if p.canal == 'MOS' %}bg-dark{% else %}bg-primary{% endif %} px-2">{{ p.get_canal_display }}</span>
+                                    <span class="badge {% if p.modalidad == 'ENVIO' %}bg-primary{% else %}bg-info text-white{% endif %} px-2">{{ p.get_modalidad_display }}</span>
+                                </td>
+                                <td class="fw-bold text-end">$ {{ p.total|floatformat:2 }}</td>
+                                <td class="text-center px-4">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-sm btn-info text-white px-3" data-bs-toggle="modal" data-bs-target="#modalItems{{ p.nro_pedido }}">
+                                            <i class="bi bi-list-check"></i> Items
+                                        </button>
+                                        <a href="{% url 'gestion_interna:marcar_listo' p.nro_pedido %}" class="btn btn-sm btn-success px-3">
+                                            <i class="bi bi-check-lg"></i> Listo
+                                        </a>
+                                        {% if p.canal == 'MOS' or p.canal == 'WEB' and p.modalidad == 'RETIRO' %}
+                                        <a href="{% url 'ventas_mostrador:finalizar_pedido_caja' p.nro_pedido %}" class="btn btn-sm btn-outline-primary px-3">
+                                            <i class="bi bi-wallet2"></i> Cobrar
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center py-4 text-muted">No hay pedidos pendientes.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+                <div class="card-header bg-success text-white p-3"><h5 class="mb-0 fw-bold small text-uppercase">Historial Reciente (Últimos 50)</h5></div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small fw-bold">
+                            <tr>
+                                <th class="ps-4"># PEDIDO</th>
+                                <th>CLIENTE / VENDEDOR</th>
+                                <th>FECHA / PAGO</th>
+                                <th class="text-end">TOTAL</th>
+                                <th class="text-center px-4">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in procesados %}
+                            <tr class="fila-pedido">
+                                <td class="ps-4 fw-bold text-success">#{{ p.nro_pedido }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ p.cliente }}</div>
+                                    <small class="text-muted">Vendido por: {{ p.vendedor }}</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-bold">{{ p.fecha|date:"d/m/Y H:i" }}</div>
+                                    <small class="badge bg-light text-dark border">{{ p.forma_pago }}</small>
+                                </td>
+                                <td class="fw-bold text-end">$ {{ p.total|floatformat:2 }}</td>
+                                <td class="text-center px-4">
+                                    <button class="btn btn-sm btn-outline-success px-3" data-bs-toggle="modal" data-bs-target="#modalItems{{ p.nro_pedido }}">
+                                        Revisar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-productos">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-box-seam me-2"></i>Catálogo de Productos</h4>
+                <button class="btn btn-primary shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#formNuevoProductoCompleto">
+                    <i class="bi bi-plus-lg me-1"></i> NUEVO PRODUCTO
+                </button>
+            </div>
+
+            <!-- FORMULARIO COMPLETO RESTAURADO (Colapsable) -->
+            <div id="formNuevoProductoCompleto" class="collapse {% if form.errors or formset.errors or stock_formset.errors %}show{% endif %} mb-4">
+                <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                    <div class="card-header bg-primary text-white p-3">
+                        <h5 class="mb-0 fw-bold small text-uppercase">Registro de Mercadería Completo</h5>
+                    </div>
+                    <div class="card-body p-4 bg-white">
+                        <form method="post" enctype="multipart/form-data" action="{% url 'gestion_interna:dashboard' %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <!-- Row 1: Nombre, Categoría, Marca -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.nombre.label }}</label>
+                                    {{ form.nombre }}
+                                    {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.categoria.label }}</label>
+                                    <div class="position-relative">
+                                        <div class="d-none">{{ form.categoria }}</div>
+                                        <div class="input-group">
+                                            <input type="text" id="categoria_search" class="form-control" autocomplete="off" placeholder="Buscar categoría...">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarSeleccion('categoria')"><i class="bi bi-x mb-0"></i></button>
+                                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalCrearRapido" onclick="configurarModal('categoria')"><i class="bi bi-plus-lg mb-0"></i></button>
+                                        </div>
+                                        <div id="categoria_results" class="list-group position-absolute w-100 shadow" style="display:none; z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                                        <small id="categoria_selected_text" class="text-success fw-bold d-block mt-1" style="display:none;"></small>
+                                    </div>
+                                    {% if form.categoria.errors %}<div class="text-danger small">{{ form.categoria.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.marca.label }}</label>
+                                    <div class="position-relative">
+                                        <div class="d-none">{{ form.marca }}</div>
+                                        <div class="input-group">
+                                            <input type="text" id="marca_search" class="form-control" autocomplete="off" placeholder="Buscar marca...">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarSeleccion('marca')"><i class="bi bi-x mb-0"></i></button>
+                                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalCrearRapido" onclick="configurarModal('marca')"><i class="bi bi-plus-lg mb-0"></i></button>
+                                        </div>
+                                        <div id="marca_results" class="list-group position-absolute w-100 shadow" style="display:none; z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                                        <small id="marca_selected_text" class="text-success fw-bold d-block mt-1" style="display:none;"></small>
+                                    </div>
+                                    {% if form.marca.errors %}<div class="text-danger small">{{ form.marca.errors }}</div>{% endif %}
+                                </div>
+
+                                <!-- Row 2: IVA, Código de Barras -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.iva.label }}</label>
+                                    {{ form.iva }}
+                                    {% if form.iva.errors %}<div class="text-danger small">{{ form.iva.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.codigo_barras.label }}</label>
+                                    {{ form.codigo_barras }}
+                                    {% if form.codigo_barras.errors %}<div class="text-danger small">{{ form.codigo_barras.errors }}</div>{% endif %}
+                                </div>
+
+                                <!-- Row 3: Salud (Vegano, Sin TACC) y Marketing -->
+                                <div class="col-md-12 bg-light p-3 rounded">
+                                    <div class="row g-3">
+                                        <div class="col-md-6 border-end">
+                                            <label class="small fw-bold text-uppercase text-muted d-block mb-2">Salud y Dieta</label>
+                                            <div class="d-flex gap-3 flex-wrap">
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_vegano }}
+                                                    <label class="form-check-label small" for="{{ form.es_vegano.id_for_label }}">{{ form.es_vegano.label }}</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_vegetariano }}
+                                                    <label class="form-check-label small" for="{{ form.es_vegetariano.id_for_label }}">{{ form.es_vegetariano.label }}</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_sin_tacc }}
+                                                    <label class="form-check-label small" for="{{ form.es_sin_tacc.id_for_label }}">{{ form.es_sin_tacc.label }}</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-uppercase text-muted d-block mb-2">Visibilidad / Etiquetas</label>
+                                            <div class="d-flex gap-3 flex-wrap">
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_oferta }}
+                                                    <label class="form-check-label small" for="{{ form.es_oferta.id_for_label }}">OFERTA</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_novedad }}
+                                                    <label class="form-check-label small" for="{{ form.es_novedad.id_for_label }}">NOVEDAD</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.es_proximamente }}
+                                                    <label class="form-check-label small" for="{{ form.es_proximamente.id_for_label }}">PRÓX</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.octogono_advertencia.label }}</label>
+                                    {{ form.octogono_advertencia }}
+                                    <small class="text-muted">Ej: Exceso en Azúcares, Exceso en Sodio</small>
+                                </div>
+
+                                <!-- Row 4: Envase, Contenido, Medida, Peso, Vol -->
+                                <div class="row g-2 mt-1">
+                                    <div class="col-md">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.tipo_envase.label }}</label>
+                                        {{ form.tipo_envase }}
+                                        {% if form.tipo_envase.errors %}<div class="text-danger small">{{ form.tipo_envase.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.contenido_neto.label }}</label>
+                                        {{ form.contenido_neto }}
+                                    </div>
+                                    <div class="col-md">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.unidad_medida.label }}</label>
+                                        {{ form.unidad_medida }}
+                                        {% if form.unidad_medida.errors %}<div class="text-danger small">{{ form.unidad_medida.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.peso_kg.label }}</label>
+                                        {{ form.peso_kg }}
+                                        {% if form.peso_kg.errors %}<div class="text-danger small">{{ form.peso_kg.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">{{ form.volumen_m3.label }}</label>
+                                        {{ form.volumen_m3 }}
+                                        {% if form.volumen_m3.errors %}<div class="text-danger small">{{ form.volumen_m3.errors }}</div>{% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Row 5: Precios -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-uppercase text-success">{{ form.precio_venta.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-success text-white">$</span>
+                                        {{ form.precio_venta }}
+                                    </div>
+                                    {% if form.precio_venta.errors %}<div class="text-danger small">{{ form.precio_venta.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.precio_costo.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.precio_costo }}
+                                    </div>
+                                </div>
+
+                                <!-- Row 6: Descripción -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.descripcion_breve.label }}</label>
+                                    {{ form.descripcion_breve }}
+                                    {% if form.descripcion_breve.errors %}<div class="text-danger small">{{ form.descripcion_breve.errors }}</div>{% endif %}
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.descripcion_detallada.label }}</label>
+                                    {{ form.descripcion_detallada }}
+                                    <small class="text-muted">Formato HTML permitido.</small>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.especificaciones.label }}</label>
+                                    {{ form.especificaciones }}
+                                    <small class="text-muted">Formato JSON para características técnicas.</small>
+                                </div>
+
+                                <!-- Row 7: Imagen Principal -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">{{ form.imagen_principal.label }}</label>
+                                    {{ form.imagen_principal }}
+                                </div>
+
+                                <!-- STOCKS -->
+                                <div class="col-12 mt-3">
+                                    <div class="card bg-light border-0">
+                                        <div class="card-header bg-dark text-white py-1 d-flex justify-content-between align-items-center">
+                                            <small class="fw-bold">STOCKS INICIALES</small>
+                                            <button type="button" class="btn btn-xs btn-success fw-bold py-0" id="add-stock-btn" style="font-size: 0.7rem;">
+                                                <i class="bi bi-plus-circle me-1"></i>AGREGAR SUCURSAL
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-3" id="stock-form-container">
+                                            {{ stock_formset.management_form }}
+                                            {% for s_form in stock_formset %}
+                                                <div class="stock-form-row row g-2 mb-2 align-items-end border-bottom pb-2">
+                                                    <div class="col-md-3">
+                                                        <small class="fw-bold text-muted d-block text-truncate">Sucursal</small>
+                                                        {{ s_form.sucursal }}
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="fw-bold text-muted d-block text-truncate">Cantidad</small>
+                                                        {{ s_form.cantidad }}
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="fw-bold text-muted d-block text-truncate">Sector/Pasillo</small>
+                                                        {{ s_form.ubicacion_pasillo }}
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="fw-bold text-muted d-block text-truncate">Stock Mín.</small>
+                                                        {{ s_form.stock_minimo }}
+                                                    </div>
+                                                    {% for hidden in s_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                                    {% if s_form.errors %}<div class="col-12 text-danger small">{{ s_form.errors }}</div>{% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Template para nueva fila (Hidden) -->
+                                <div id="empty-stock-form" class="d-none">
+                                    <div class="stock-form-row row g-2 mb-2 align-items-end border-bottom pb-2">
+                                        <div class="col-md-3">
+                                            <small class="fw-bold text-muted d-block text-truncate">Sucursal</small>
+                                            {{ stock_formset.empty_form.sucursal }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="fw-bold text-muted d-block text-truncate">Cantidad</small>
+                                            {{ stock_formset.empty_form.cantidad }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="fw-bold text-muted d-block text-truncate">Sector/Pasillo</small>
+                                            {{ stock_formset.empty_form.ubicacion_pasillo }}
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="fw-bold text-muted d-block text-truncate">Stock Mín.</small>
+                                            {{ stock_formset.empty_form.stock_minimo }}
+                                        </div>
+                                        <div class="col-md-1 text-center text-danger">
+                                            <button type="button" class="btn btn-link btn-sm text-danger p-0" onclick="this.closest('.stock-form-row').remove()">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- GALERIA -->
+                                <div class="col-12 mt-3">
+                                    <div class="card bg-light border-0">
+                                        <div class="card-header bg-secondary text-white py-1"><small class="fw-bold">GALERÍA ADICIONAL</small></div>
+                                        <div class="card-body p-3">
+                                            {{ formset.management_form }}
+                                            {% for fimg in formset %}
+                                                <div class="row g-2 mb-2 align-items-center">
+                                                    <div class="col-md-9">{{ fimg.imagen }}</div>
+                                                    <div class="col-md-3">{{ fimg.orden }}</div>
+                                                    {% for hidden in fimg.hidden_fields %}{{ hidden }}{% endfor %}
+                                                    {% if fimg.errors %}<div class="col-12 text-danger small">{{ fimg.errors }}</div>{% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+                                <div class="col-12 text-end mt-4">
+                                    <button type="submit" name="guardar_producto" class="btn btn-primary px-5 fw-bold shadow-sm">
+                                        <i class="bi bi-save me-2"></i>GUARDAR PRODUCTO COMPLETO
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA DE GESTIÓN DE PRODUCTOS -->
+            <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+                <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold small text-uppercase">
+                        <i class="bi bi-list-ul me-2"></i>Catálogo / BUSCAR PRODUCTOS
+                    </h5>
+                    <div class="input-group input-group-sm w-50">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="buscadorProductosDirecto" class="form-control border-0 bg-light" placeholder="Escriba nombre o SKU para filtrar la tabla...">
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small fw-bold sticky-top">
+                            <tr>
+                                <th class="ps-4">PRODUCTO</th>
+                                <th>CATEGORÍA</th>
+                                <th class="text-center">STOCK LOCAL</th>
+                                <th>PRECIO</th>
+                                <th class="text-center">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-tabla-gestion">
+                            {% include "gestion_productos/tabla_gestion_fragment.html" with productos_gestion=productos_todos %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if user.rol == 'SA' or user.rol == 'AS' %}
+        <div class="tab-pane fade" id="pills-usuarios">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-people me-2"></i>Gestión de Usuarios</h4>
+                <button class="btn btn-dark shadow-sm" type="button" onclick="abrirModalCrearUsuario()">
+                    <i class="bi bi-person-plus me-1"></i> NUEVO USUARIO
+                </button>
+            </div>
+
+            <!-- TABLA DE GESTIÓN DE USUARIOS -->
+            <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+                <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold small text-uppercase">
+                        <i class="bi bi-list-ul me-2"></i>Listado / BUSCAR USUARIOS
+                    </h5>
+                    <div class="input-group input-group-sm w-50">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="buscadorUsuariosAjax" class="form-control border-0 bg-light" 
+                               placeholder="Buscar por username, nombre o email..."
+                               oninput="buscarUsuarios(this.value)">
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small fw-bold sticky-top">
+                            <tr>
+                                <th class="ps-4">USUARIO / EMAIL</th>
+                                <th>NOMBRE Y APELLIDO</th>
+                                <th class="text-center">ROL</th>
+                                <th class="text-center">ACTIVO</th>
+                                <th class="text-center">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-tabla-usuarios">
+                            <!-- Se carga vía AJAX -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4">Cargando usuarios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+
+        
+    </div>
+</div>
+
+<div class="modal fade" id="modalNotificacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div class="modal-body text-center p-5">
+                <i class="bi bi-check-circle-fill text-success mb-3" style="font-size: 4rem;"></i>
+                {% if messages %}
+                    {% for message in messages %} <h4 class="fw-bold">{{ message }}</h4> {% endfor %}
+                {% endif %}
+                <button type="button" class="btn btn-dark mt-4 px-5 py-2 fw-bold" data-bs-dismiss="modal" style="border-radius: 10px;">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% for p in todos_los_pedidos %}
+<div class="modal fade" id="modalItems{{ p.nro_pedido }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> 
+        <div class="modal-content shadow-lg border-0" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold fs-3">Orden #{{ p.nro_pedido }}</h5>
+                    <p class="text-muted mb-0">Cliente: <strong>{{ p.cliente }}</strong> | Tel: {{ p.telefono|default:"S/T" }}</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="row mb-4 g-2">
+                    <div class="col-md-3 col-6">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Canal / Vendedor</small>
+                            <span class="small fw-bold">{{ p.get_canal_display }} / {{ p.vendedor|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Método de Pago</small>
+                            <span class="small fw-bold text-primary">{{ p.forma_pago|default:"Pendiente" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Operación Fiscal</small>
+                            <span class="small fw-bold text-dark">{{ p.nro_operacion_fiscal|default:"S/N" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Modalidad</small>
+                            <span class="small fw-bold">{{ p.get_modalidad_display }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase">
+                                <th>Producto</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in p.items.all %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ item.producto_nombre }}</div>
+                                    <small class="text-muted" style="font-family: monospace;">SKU: {{ item.sku|default:"N/A" }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary px-3 fs-6">{{ item.cantidad }}</span>
+                                </td>
+                                <td class="text-end fw-bold">$ {{ item.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-warning py-2 px-3 border-0 d-flex align-items-center mb-3" style="border-radius: 10px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small><strong>Reemplazo:</strong> {{ p.reemplazo_opcion|default:"Consultar al cliente" }}</small>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 bg-dark text-white rounded-3 shadow-sm">
+                    <span class="fs-5 fw-light">Total a Cobrar:</span>
+                    <span class="h2 mb-0 fw-bold text-success">$ {{ p.total|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 px-4 pb-4">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" onclick="window.print()">
+                    <i class="bi bi-printer me-2"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<div class="modal fade" id="modalCrearRapido" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="tituloModalRapido">Nueva</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small text-uppercase fw-bold text-muted">Nombre</label>
+                    <input type="text" id="nombreRapido" class="form-control" placeholder="Escriba el nombre aquí...">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" onclick="guardarRapido()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tab-pane fade" id="pills-transferencias" role="tabpanel">
+        <div id="contenedor-ajax-transferencias">
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary"></div>
+                <p>Cargando panel...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA USUARIOS (REUTILIZABLE) -->
+    <div class="modal fade" id="modalUsuarioCRUD" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" id="contenido-modal-usuario" style="border-radius: 15px;">
+                <!-- Se carga vía AJAX -->
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    // Única línea de Django que necesitamos en el HTML
+    const CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+    <script src="{% static 'js/dashboard_logic.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lógica para agregar stock dinámicamente
+            const addBtn = document.getElementById('add-stock-btn');
+            const stockPrefix = '{{ stock_formset.prefix }}';
+
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
+                    const container = document.getElementById('stock-form-container');
+                    const totalForms = document.getElementById(`id_${stockPrefix}-TOTAL_FORMS`);
+                    const currentCount = parseInt(totalForms.value);
+                    
+                    const template = document.getElementById('empty-stock-form').innerHTML;
+                    const newRowHtml = template.replace(/__prefix__/g, currentCount);
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newRowHtml.trim();
+                    container.appendChild(tempDiv.firstChild);
+                    
+                    totalForms.value = currentCount + 1;
+                });
+            }
+        });
+
+        // --- LÓGICA DE USUARIOS ---
+        function cargarUsuarios() {
+            const cuerpo = document.getElementById('cuerpo-tabla-usuarios');
+            fetch('/gestion-usuarios/lista-ajax/')
+                .then(response => {
+                    if (!response.ok) throw new Error('Error de red o permisos');
+                    return response.json();
+                })
+                .then(data => {
+                    cuerpo.innerHTML = data.html;
+                })
+                .catch(err => {
+                    console.error('Error al cargar usuarios:', err);
+                    Swal.fire('Error', 'No se pudo cargar la lista de usuarios. Verificá tus permisos.', 'error');
+                });
+        }
+
+        function buscarUsuarios(query) {
+            const cuerpo = document.getElementById('cuerpo-tabla-usuarios');
+            fetch(`/gestion-usuarios/buscar-ajax/?q=${encodeURIComponent(query)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Error en la búsqueda');
+                    return response.json();
+                })
+                .then(data => {
+                    cuerpo.innerHTML = data.html;
+                })
+                .catch(err => console.error('Error al buscar usuarios:', err));
+        }
+
+        function toggleUsuarioActivo(usuarioId) {
+            fetch(`/gestion-usuarios/toggle-activo/${usuarioId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: data.is_active ? 'Usuario activado' : 'Usuario desactivado'
+                    });
+                }
+            });
+        }
+
+        function abrirModalCrearUsuario() {
+            fetch('/gestion-usuarios/crear/')
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al obtener el formulario');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('contenido-modal-usuario').innerHTML = data.html;
+                    const modal = new bootstrap.Modal(document.getElementById('modalUsuarioCRUD'));
+                    modal.show();
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    Swal.fire('Error', 'No se pudo abrir el formulario de creación.', 'error');
+                });
+        }
+
+        function abrirModalEditarUsuario(usuarioId) {
+            fetch(`/gestion-usuarios/editar/${usuarioId}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al obtener datos del usuario');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('contenido-modal-usuario').innerHTML = data.html;
+                    const modal = new bootstrap.Modal(document.getElementById('modalUsuarioCRUD'));
+                    modal.show();
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    Swal.fire('Error', 'No se pudo abrir el editor de usuario.', 'error');
+                });
+        }
+
+        function handlerGuardarUsuario(event) {
+            const form = event.target;
+            const usuarioId = form.getAttribute('data-usuario-id');
+            guardarUsuario(event, usuarioId === 'null' ? null : usuarioId);
+        }
+
+        function guardarUsuario(event, usuarioId) {
+            event.preventDefault();
+            const form = event.currentTarget || event.target;
+            const formData = new FormData(form);
+            const url = usuarioId ? `/gestion-usuarios/editar/${usuarioId}/` : '/gestion-usuarios/crear/';
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const modalEl = document.getElementById('modalUsuarioCRUD');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    Swal.fire('¡Éxito!', data.message, 'success');
+                    cargarUsuarios();
+                } else {
+                    let errorMsg = 'Error en el formulario';
+                    if (data.errors) {
+                        try {
+                            const errObj = JSON.parse(data.errors);
+                            errorMsg = Object.values(errObj).map(e => e[0].message).join('\n');
+                        } catch(e) { errorMsg = JSON.stringify(data.errors); }
+                    }
+                    Swal.fire('Error', errorMsg, 'error');
+                }
+            })
+            .catch(err => console.error('Error al guardar usuario:', err));
+        }
+    </script>
+{% endblock %}

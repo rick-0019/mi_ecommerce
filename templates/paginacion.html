@@ -1,0 +1,34 @@
+<div class="d-flex flex-column align-items-center justify-content-center my-5 py-4 border-top">
+    <nav aria-label="Navegación de páginas">
+        <ul class="pagination">
+            {% if productos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link custom-page-link" href="?{% for key, values in request.GET.lists %}{% if key != 'page' %}{% for v in values %}{{ key }}={{ v }}&{% endfor %}{% endif %}{% endfor %}page={{ productos.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+
+            {% for num in productos.paginator.page_range %}
+                {% if productos.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link custom-active-link">{{ num }}</span>
+                    </li>
+                {% elif num > productos.number|add:'-3' and num < productos.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link custom-page-link" href="?{% for key, values in request.GET.lists %}{% if key != 'page' %}{% for v in values %}{{ key }}={{ v }}&{% endfor %}{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if productos.has_next %}
+                <li class="page-item">
+                    <a class="page-link custom-page-link" href="?{% for key, values in request.GET.lists %}{% if key != 'page' %}{% for v in values %}{{ key }}={{ v }}&{% endfor %}{% endif %}{% endfor %}page={{ productos.next_page_number }}">Siguiente</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="dropdown">
+        <small class="text-muted cursor-pointer">
+            Página {{ productos.number }} de {{ productos.paginator.num_pages }} ▾
+        </small>
+    </div>
+</div>

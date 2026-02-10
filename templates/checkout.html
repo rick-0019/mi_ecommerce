@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 p-4" style="border-radius: 12px;">
+                <h4 class="mb-4 fw-bold">Información de Entrega</h4>
+
+                <div class="form-check form-switch mb-4 p-3 bg-light rounded-3 border">
+                    <input class="form-check-input ms-0" type="checkbox" id="es_retiro" onchange="toggleEntrega()">
+                    <label class="form-check-label ms-2 fw-bold" for="es_retiro">
+                        <i class="bi bi-shop me-1"></i> ¿Retiras en sucursal?
+                    </label>
+                </div>
+                
+                <form id="form-finalizar">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Nombre Completo</label>
+                        <input type="text" id="nombre" class="form-control rounded-3" placeholder="Ej: Juan Pérez" required>
+                    </div>
+
+                    <div id="seccion_envio">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Dirección Exacta</label>
+                            <input type="text" id="direccion" class="form-control rounded-3" placeholder="Calle 123, Depto 4B">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small">Indicaciones para el repartidor (Opcional)</label>
+                            <textarea id="indicaciones" class="form-control rounded-3" rows="3" placeholder="Ej: Es una casa de rejas verdes..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Teléfono</label>
+                        <input type="tel" id="telefono" class="form-control rounded-3" placeholder="11 1234 5678" required>
+                    </div>
+
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        {% if cantidad_sucursales > 1 %}
+                            <label class="form-label fw-bold small" id="label_sucursal">Seleccionar Sucursal</label>
+                            <select id="sucursal_id" class="form-select rounded-3" required>
+                                <option value="" disabled selected>-- Elegí una sucursal --</option>
+                                {% for s in sucursales %}
+                                    <option value="{{ s.nombre }}">{{ s.nombre }} ({{ s.direccion }})</option>
+                                {% endfor %}
+                            </select>
+                        {% elif cantidad_sucursales == 1 %}
+                            <label class="form-label fw-bold small text-muted" id="label_sucursal">Sucursal:</label>
+                            <p class="mb-0 fw-bold">{{ sucursal_unica.nombre }}</p>
+                            <small class="text-muted">{{ sucursal_unica.direccion }}</small>
+                            <input type="hidden" id="sucursal_id" value="{{ sucursal_unica.nombre }}">
+                        {% endif %}
+                    </div>
+                    
+                    <button type="button" id="btn-enviar" onclick="enviarPedido()" class="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm">
+                        <i class="bi bi-check-circle me-2"></i> FINALIZAR COMPRA
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="sticky-top" style="top: 20px;">
+                <div class="card shadow-sm border-0 p-4 mb-3" style="border-radius: 12px; border-left: 5px solid #0d6efd !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Reemplazos sin stock</h6>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="permitir_reemplazo" checked onchange="toggleCriterios()">
+                            <label class="form-check-label fw-bold text-primary" for="permitir_reemplazo" id="status_reemplazo">SI</label>
+                        </div>
+                    </div>
+                    <div id="seccion_criterios">
+                        <div class="bg-light p-3 rounded-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="criterio" id="criterio_llamada" value="Llamado" checked>
+                                <label class="form-check-label small fw-bold" for="criterio_llamada">Llamado telefónico</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="criterio" id="criterio_tienda" value="Criterio de la Tienda">
+                                <label class="form-check-label small fw-bold" for="criterio_tienda">Criterio de la Tienda</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 p-4" style="border-radius: 12px;">
+                    <h5 class="fw-bold mb-3">Resumen de tu pedido</h5>
+                    <div class="mb-3">
+                        {% if request.session.carrito.items %}
+                            {% for key, value in request.session.carrito.items %}
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">{{ value.cantidad }}x {{ value.nombre }}</span>
+                                    <span class="fw-bold">${{ value.acumulado }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between h5 fw-bold text-primary mb-0">
+                        <span>Total:</span>
+                        <span>$ {{ importe_total_carrito|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleEntrega() {
+    const esRetiro = document.getElementById('es_retiro').checked;
+    const seccionEnvio = document.getElementById('seccion_envio');
+    const labelSucursal = document.getElementById('label_sucursal');
+    if (esRetiro) {
+        seccionEnvio.style.display = 'none';
+        if(labelSucursal) labelSucursal.innerText = "Sucursal de Retiro";
+    } else {
+        seccionEnvio.style.display = 'block';
+        if(labelSucursal) labelSucursal.innerText = "Sucursal de Despacho";
+    }
+}
+
+function toggleCriterios() {
+    const sw = document.getElementById('permitir_reemplazo');
+    const seccion = document.getElementById('seccion_criterios');
+    const status = document.getElementById('status_reemplazo');
+    if(sw.checked) {
+        seccion.style.opacity = "1";
+        seccion.style.pointerEvents = "auto";
+        status.innerText = "SI";
+        status.className = "form-check-label fw-bold text-primary";
+    } else {
+        seccion.style.opacity = "0.5";
+        seccion.style.pointerEvents = "none";
+        status.innerText = "NO";
+        status.className = "form-check-label fw-bold text-danger";
+    }
+}
+
+async function enviarPedido() {
+    const inputNombre = document.getElementById('nombre');
+    const inputDireccion = document.getElementById('direccion');
+    const inputTelefono = document.getElementById('telefono');
+    const inputSucursal = document.getElementById('sucursal_id');
+    const esRetiro = document.getElementById('es_retiro').checked;
+    const btn = document.getElementById('btn-enviar');
+
+    let opcionReemplazo = "No permitir reemplazos";
+    if (document.getElementById('permitir_reemplazo').checked) {
+        const seleccionado = document.querySelector('input[name="criterio"]:checked');
+        opcionReemplazo = seleccionado ? seleccionado.value : "Llamado";
+    }
+
+    // 1. Validación de campos obligatorios
+    if (!inputNombre.value || !inputTelefono.value || (inputSucursal && !inputSucursal.value)) {
+        Swal.fire({
+            title: 'Campos incompletos',
+            text: 'Por favor, completá tu nombre, teléfono y sucursal.',
+            icon: 'warning',
+            confirmButtonColor: '#0d6efd'
+        });
+        return;
+    }
+
+    // 2. Estado de carga
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> PROCESANDO...';
+
+    // 3. Preparación de datos
+    const totalLimpio = "{{ importe_total_carrito }}".replace(/\./g, '').replace(',', '.');
+
+    const datosPedido = {
+        nombre: inputNombre.value,
+        telefono: inputTelefono.value,
+        direccion: esRetiro ? "RETIRO EN LOCAL" : inputDireccion.value,
+        sucursal: inputSucursal.value,
+        modalidad: esRetiro ? "RETIRO" : "ENVIO",
+        total: totalLimpio,
+        reemplazo_opcion: opcionReemplazo
+    };
+
+    try {
+        const response = await fetch("{% url 'guardar_pedido' %}", {
+            method: 'POST',
+            body: JSON.stringify(datosPedido),
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+
+        const resultado = await response.json();
+
+        if (resultado.status === 'ok') {
+            // ÉXITO: Pedido guardado
+            Swal.fire({
+                title: '¡Pedido Confirmado!',
+                text: `Tu pedido #${resultado.nro_pedido} fue recibido con éxito.`,
+                icon: 'success',
+                confirmButtonText: 'Genial',
+                confirmButtonColor: '#198754',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/"; 
+                }
+            });
+        } else {
+            // FALLA DE NEGOCIO (Ej: Sin Stock en esa sucursal)
+            Swal.fire({
+                title: `<strong>${resultado.title || 'Atención'}</strong>`,
+                html: `<p class="mt-3">${resultado.message}</p>`,
+                icon: 'warning',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Revisar pedido',
+                allowOutsideClick: false
+            });
+            
+            // Si el error es de stock, marcamos el selector de sucursal para llamar la atención
+            if (inputSucursal) {
+                inputSucursal.classList.add('is-invalid');
+                setTimeout(() => inputSucursal.classList.remove('is-invalid'), 5000);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> FINALIZAR COMPRA';
+        }
+    } catch (error) {
+        // ERROR TÉCNICO: Servidor caído o error de red
+        console.error("Error técnico:", error);
+        Swal.fire({
+            title: 'Error de conexión',
+            text: 'No pudimos conectar con el servidor. Reintentá en unos momentos.',
+            icon: 'error',
+            confirmButtonColor: '#6c757d'
+        });
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> FINALIZAR COMPRA';
+    }
+}
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}

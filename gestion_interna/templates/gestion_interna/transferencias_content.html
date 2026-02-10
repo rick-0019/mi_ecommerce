@@ -1,0 +1,245 @@
+{% load static %}
+<div class="row animate__animated animate__fadeIn">
+    <!-- Panel Izquierdo: Acciones (Búsqueda y Recepción) -->
+    <div class="col-md-7">
+        
+        <!-- SECCIÓN: NUEVA TRANSFERENCIA (Búsqueda) - AHORA PRIMERO -->
+        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-primary">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold small text-uppercase"><i class="bi bi-box-seam me-2"></i>Nueva Transferencia</h5>
+                <div class="input-group input-group-sm w-50">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="buscadorTransfDirecto" class="form-control border-0 bg-light" placeholder="Buscar productos para enviar...">
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Buscá productos de tu stock para transferir.</p>
+                <div id="resultados-transferencia" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-arrow-up-circle d-block mb-2 fs-2"></i>
+                        Escribí en el buscador superior...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: TRANSFERENCIAS ENTRANTES (Para recibir) -->
+        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-download me-2"></i>Transferencias Entrantes</h5>
+                <span class="badge bg-dark">{{ transferencias_entrantes.count }} pendiente(s)</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 250px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="small text-uppercase">
+                                <th class="ps-3">ID / Origen</th>
+                                <th>Fecha</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transferencias_entrantes %}
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold">#{{ t.id }}</div>
+                                    <small class="text-muted">Desde: <strong>{{ t.origen }}</strong></small>
+                                </td>
+                                <td><small>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</small></td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button class="btn btn-sm btn-info text-white rounded-pill px-3 shadow-sm fw-bold" onclick="verDetalleTransferencia('{{ t.id }}')">
+                                            <i class="bi bi-list-ul me-1"></i> Items
+                                        </button>
+                                        <button class="btn btn-sm btn-warning fw-bold px-3 shadow-sm rounded-pill" onclick="confirmarRecepcion('{{ t.id }}')">
+                                            <i class="bi bi-box me-1"></i> Recibir
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">
+                                    No hay transferencias pendientes de recibo.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL DE RECEPCIONES (Lo que recibimos nosotros) -->
+        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold small text-uppercase"><i class="bi bi-journal-check me-2"></i>Historial de Recepciones</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 200px;">
+                    <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="bg-light">
+                            <tr class="small text-uppercase">
+                                <th class="ps-3">ID / Origen</th>
+                                <th>Fecha</th>
+                                <th class="text-end pe-3">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transferencias_recibidas %}
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold">#{{ t.id }}</div>
+                                    <small class="text-muted">Desde: <strong>{{ t.origen }}</strong></small>
+                                </td>
+                                <td><small>{{ t.fecha_creacion|date:"d/m/Y" }}</small></td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-0" onclick="verDetalleTransferencia('{{ t.id }}')">
+                                        <i class="bi bi-eye me-1"></i>Items
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3 text-muted small">
+                                    No has recibido transferencias aún.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL RECIENTE (Lo que enviamos nosotros) -->
+        <div class="card shadow-sm border-0 border-start border-4 border-secondary">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold small text-uppercase">Últimos Envíos Realizados</h5>
+            </div>
+            <div class="card-body p-0 text-muted">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr class="bg-light">
+                                <th class="ps-3">ID / Destino</th>
+                                <th>Estado</th>
+                                <th class="text-end pe-3">Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transferencias_enviadas %}
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold">#{{ t.id }}</div>
+                                    <small>A: {{ t.destino }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if t.estado == 'COMPLETADO' %}bg-success{% elif t.estado == 'EN_TRANSITO' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2">
+                                        {{ t.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm btn-link p-0 me-2 text-decoration-none" onclick="verDetalleTransferencia('{{ t.id }}')">
+                                        <i class="bi bi-eye"></i>Ver
+                                    </button>
+                                    {{ t.fecha_creacion|date:"d/m/y" }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center py-3">No hay envíos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Derecho: Remito de Transferencia (Estilo Ticket) -->
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0 border-start border-4 sticky-top" style="border-color: #6f42c1 !important; top: 1rem; z-index: 10;">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(45deg, #6f42c1, #8957e5);">
+                <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Remito de Envío</h5>
+                <small>Origen: {{ request.user.sucursal.nombre }}</small>
+            </div>
+            
+            <!-- Selector de Sucursal Destino -->
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="dropdown w-100">
+                    <button class="btn btn-outline-primary w-100 dropdown-toggle fw-bold" type="button" id="dropdownSucursal" data-bs-toggle="dropdown">
+                        <i class="bi bi-geo-alt me-2"></i>Sucursal Destino
+                    </button>
+                    <ul class="dropdown-menu w-100 shadow">
+                        <li><h6 class="dropdown-header">Destinos Disponibles</h6></li>
+                        {% for suc in sucursales %}
+                        <li><a class="dropdown-item py-2" href="#" onclick="seleccionarDestino('{{ suc.id }}', '{{ suc.nombre }}')">
+                            <i class="bi bi-building me-2"></i>{{ suc.nombre }}
+                        </a></li>
+                        {% empty %}
+                        <li><span class="dropdown-item text-muted">No hay otros destinos</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div id="sucursal-seleccionada-badge" class="mt-2 text-center fw-bold text-success" style="display:none;"></div>
+            </div>
+            
+            <!-- Contenedor para actualizaciones AJAX del Remito -->
+            <div id="contenedor-remito-ajax">
+                {% include 'gestion_interna/remito_transferencia_fragment.html' %}
+            </div>
+
+            <!-- Botones de Acción (Fuera del fragmento AJAX para no perder el estado del botón 'Enviar' si es necesario, 
+                 aunque usualmente el remito completo es lo que se actualiza) -->
+            <div class="card-footer bg-white border-top-0 p-3 pt-0">
+                <div class="row g-2">
+                    <div class="col-8">
+                        <button onclick="generarTransferencia()" class="btn btn-success btn-lg w-100 fw-bold shadow-sm">
+                            <i class="bi bi-send me-2"></i>ENVIAR
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button onclick="vaciarCarrito()" class="btn btn-outline-danger btn-lg w-100 fw-bold shadow-sm">
+                            VACIAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Transferencia -->
+<div class="modal fade" id="modalDetalleTransferencia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 15px;">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold" id="titulo-detalle-transferencia">Detalle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small text-uppercase">
+                            <tr>
+                                <th class="ps-3">Producto</th>
+                                <th class="text-center">SKU</th>
+                                <th class="text-center">Cant.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-detalle-transferencia">
+                            <!-- Carga vía JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario oculto (usado para obtener el valor vía JS) -->
+<input type="hidden" name="sucursal_destino" id="input-sucursal-id">

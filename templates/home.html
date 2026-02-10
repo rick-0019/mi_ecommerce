@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - Mi Ecommerce{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- BARRA DE ACCESOS RÁPIDOS (VISUAL) -->
+    <div class="d-flex justify-content-center align-items-center flex-wrap gap-4 gap-md-5 py-3 mb-4 border-bottom bg-white shadow-sm rounded-3">
+        <a href="{% url 'ofertas' %}" class="d-flex align-items-center text-secondary small fw-bold text-uppercase text-decoration-none transition-link" style="cursor: pointer;">
+            <i class="bi bi-stars me-2 fs-5 text-success"></i> Ofertas
+        </a>
+        <a href="{% url 'ahorrames' %}" class="d-flex align-items-center text-secondary small fw-bold text-uppercase text-decoration-none transition-link" style="cursor: pointer;">
+            <i class="bi bi-wallet2 me-2 fs-5 text-success"></i> Ahorrames
+        </a>
+        <div class="d-flex align-items-center text-secondary small fw-bold text-uppercase" style="cursor: pointer;">
+            <i class="bi bi-file-text me-2 fs-5 text-muted"></i> Folletos
+        </div>
+        <div class="d-flex align-items-center text-secondary small fw-bold text-uppercase" style="cursor: pointer;">
+            <i class="bi bi-credit-card me-2 fs-5 text-muted"></i> Promos bancarias
+        </div>
+    </div>
+
+    {% if categoria_actual %}
+    <h2 class="mb-4 fw-bold border-bottom pb-2">
+        {{ categoria_actual.nombre }}
+    </h2>
+    {% endif %}
+    
+    {% if request.GET.q %}
+        <div class="col-12 mb-3">
+            <h5>Resultados para: <span class="text-primary">"{{ request.GET.q }}"</span></h5>
+            <a href="{% url 'home' %}" class="btn btn-sm btn-link text-muted p-0 text-decoration-none">
+                <i class="bi bi-x-circle"></i> Limpiar búsqueda
+            </a>
+        </div>
+    {% endif %}
+
+<div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for producto in productos %}
+        <div class="col">
+            {% include 'card_producto.html' with producto=producto %}
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="alert alert-info">
+                No hay productos disponibles en la categoría <strong>{{ categoria.nombre }}</strong> actualmente.
+            </p>
+        </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* Efecto para el nombre del producto */
+    .hover-green:hover {
+        color: var(--primary-color, #28a745) !important;
+    }
+
+    /* Pequeño efecto de elevación al pasar el mouse */
+    .transition-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .transition-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .transition-link {
+        transition: all 0.2s ease;
+    }
+    .transition-link:hover {
+        color: var(--primary-color, #28a745) !important;
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

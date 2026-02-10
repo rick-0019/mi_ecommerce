@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item">
+                <a href="{% url 'home' %}" class="text-decoration-none" style="color: #007bff;">Inicio</a>
+            </li>
+            {% for ancestro in producto.categoria.get_ancestros %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'categoria' ancestro.slug %}" class="text-decoration-none" style="color: #007bff;">
+                    {{ ancestro.nombre }}
+                </a>
+            </li>
+            {% endfor %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'categoria' producto.categoria.slug %}" class="text-decoration-none" style="color: #007bff;">
+                    {{ producto.categoria.nombre }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ producto.nombre }}</li>
+        </ol>
+    </nav>
+
+    <div class="row bg-white p-4 rounded shadow-sm border">
+        <div class="col-md-7 d-flex align-items-start">
+            <div class="flex-shrink-0 me-3" style="width: 85px;">
+                <img src="{{ producto.imagen_principal.url }}" 
+                     class="img-thumbnail mb-2 w-100" 
+                     style="cursor: pointer; aspect-ratio: 1/1; object-fit: cover;" 
+                     data-bs-target="#carouselProducto" 
+                     data-bs-slide-to="0">
+                
+                {% for item in producto.imagenes_galeria.all %}
+                    {% if item.imagen.url != producto.imagen_principal.url %}
+                        <img src="{{ item.imagen.url }}" 
+                             class="img-thumbnail mb-2 w-100" 
+                             style="cursor: pointer; aspect-ratio: 1/1; object-fit: cover;" 
+                             data-bs-target="#carouselProducto" 
+                             data-bs-slide-to="{{ forloop.counter }}">
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div id="carouselProducto" class="carousel slide flex-grow-1 border p-2 bg-white" data-bs-ride="false" style="min-height: 450px;">
+                <div class="carousel-inner h-100">
+                    <div class="carousel-item active text-center h-100">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <img src="{{ producto.imagen_principal.url }}" class="img-fluid" style="max-height: 440px; width: auto;">
+                        </div>
+                    </div>
+                    {% for item in producto.imagenes_galeria.all %}
+                        {% if item.imagen.url != producto.imagen_principal.url %}
+                            <div class="carousel-item text-center h-100">
+                                <div class="d-flex align-items-center justify-content-center h-100">
+                                    <img src="{{ item.imagen.url }}" class="img-fluid" style="max-height: 440px; width: auto;">
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselProducto" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true" style="width: 2rem; height: 2rem;"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselProducto" data-bs-slide="next">
+                    <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true" style="width: 2rem; height: 2rem;"></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="col-md-5 ps-md-5">
+            {# BADGES DE MARKETING #}
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                {% if producto.exclusivo_online %}
+                    <div class="badge-marketing exclusive shadow-sm">EXCLUSIVO ONLINE</div>
+                {% endif %}
+                {% if producto.ahorrames %}
+                    <div class="badge-marketing ahorrames shadow-sm">AHORRAMES</div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-start justify-content-between mb-2">
+                <h1 style="font-size: 1.75rem; font-weight: 450; color: #212529; line-height: 1.1; margin-bottom: 0; letter-spacing: -0.5px; flex-grow: 1;">
+                    {{ producto.nombre }}
+                </h1>
+                <a href="#" class="btn-favorito ms-3 {% if es_favorito %}active{% endif %}" data-producto-id="{{ producto.id }}" title="Agregar a favoritos">
+                    <i class="bi bi-heart"></i>
+                </a>
+            </div>
+            <p class="text-uppercase small text-muted">
+                <span class="fw-bold text-dark">{{ producto.marca.nombre }}</span> 
+                <span class="mx-2">|</span> 
+                SKU: {{ producto.sku }}
+            </p>
+            
+            
+
+            <div class="my-4 p-3 bg-light rounded">
+                {# LÓGICA DE PRECIOS CON OFERTA #}
+                {% if producto.precio_antes %}
+                    <div class="d-flex align-items-center gap-3 mb-1">
+                        <span class="text-muted text-decoration-line-through h5 fw-normal mb-0">
+                            $ {{ producto.precio_antes|stringformat:".2f" }}
+                        </span>
+                        {% if producto.descuento_porcentaje %}
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.85rem; border-radius: 4px;">
+                                <i class="bi bi-percent small"></i> {{ producto.descuento_porcentaje }}% DTO
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h2 class="text-danger fw-bold mb-2" style="font-size: 2.2rem; letter-spacing: -1px;">
+                        $ {{ producto.precio_actual|stringformat:".2f" }}
+                    </h2>
+                {% else %}
+                    <h2 class="text-dark fw-bold mb-2" style="font-size: 2.2rem; letter-spacing: -1px;">
+                        $ {{ producto.precio_actual|stringformat:".2f" }}
+                    </h2>
+                {% endif %}
+
+                {% if producto.precio_por_unidad_medida %}
+                    <p style="color: #686767; font-size: 0.85rem; margin-bottom: 4px;">
+                        Precio regular x 
+                        {% if producto.unidad_medida == 'LT' or producto.unidad_medida == 'CM3' %}Lt.{% else %}kg.{% endif %}: 
+                        ${{ producto.precio_por_unidad_medida|stringformat:".2f" }}
+                    </p>
+                    <p style="color: #aaa; font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0;">
+                        PRECIO SIN IMPUESTOS NACIONALES: $ {{ producto.precio_sin_impuestos|stringformat:".2f" }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <button type="button"
+                    onclick="agregarAlCarritoAjax(event, '{{ producto.id }}')"
+                    class="btn fw-bold py-3 w-50 d-flex align-items-center justify-content-center" 
+                    style="background-color: #39ce66; color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer;">
+                Agregar
+            </button>
+             <hr>
+            <p> </p>
+            
+            <p> </p>
+           
+            {% if producto.octogono_advertencia %}
+<div class="octogonos-container d-flex flex-wrap gap-2 mb-4">
+    {% with advertencias=producto.octogono_advertencia.split|join:"," %}
+        {# Asumiendo que guardas las advertencias separadas por comas o espacios #}
+        {% for advertencia in producto.octogono_advertencia.split %}
+            <div class="octogono-badge">
+                <span class="octogono-text">EXCESO EN<br><strong>{{ advertencia|upper }}</strong></span>
+            </div>
+        {% endfor %}
+    {% endwith %}
+</div>
+{% endif %}
+
+<div class="certificados-row d-flex flex-wrap gap-3 mb-4">
+    {% if producto.es_sin_tacc %}
+    <div class="certificado-item" data-bs-toggle="tooltip" title="Producto libre de gluten, apto para celíacos.">
+        <div class="certificado-badge">
+            <div class="icon-circle"><i class="fas fa-wheat-awn-circle-exclamation text-warning"></i></div>
+            <span>Sin <strong>TACC</strong></span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if producto.es_vegano %}
+    <div class="certificado-item" data-bs-toggle="tooltip" title="No contiene ingredientes de origen animal.">
+        <div class="certificado-badge">
+            <div class="icon-circle"><i class="fas fa-leaf text-success"></i></div>
+            <span>Producto <strong>Vegano</strong></span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if producto.es_vegetariano %}
+    <div class="certificado-item" data-bs-toggle="tooltip" title="Apto para vegetarianos.">
+        <div class="certificado-badge">
+            <div class="icon-circle"><i class="fas fa-seedling text-success"></i></div>
+            <span>Producto <strong>Vegetariano</strong></span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+        </div>
+    </div>
+
+    <div class="mt-5 mb-5">
+        <ul class="nav nav-tabs" id="tabInfo">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#desc">Descripción</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#specs">Especificaciones</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content border-start border-end border-bottom p-4 bg-white shadow-sm">
+            <div class="tab-pane fade show active" id="desc">
+                {{ producto.descripcion_detallada|safe }}
+            </div>
+
+            <div class="tab-pane fade" id="specs">
+    
+    {# 1. Lógica Inteligente: Ocultar envase/contenido si es Electro #}
+    {% if "Electro" not in producto.categoria.get_ancestros|stringformat:"s" and producto.categoria.nombre != "Electro" %}
+        <table class="table table-sm mb-4">
+            <tr>
+                <td class="fw-bold w-25">Envase:</td>
+                <td>{{ producto.get_tipo_envase_display }}</td>
+            </tr>
+            <tr>
+                <td class="fw-bold">Contenido:</td>
+                <td>
+                    {% if producto.unidad_medida %}
+                        {% with valor=producto.contenido_neto|floatformat:"0" %}
+                            {{ producto.contenido_neto }} 
+                            {% if producto.unidad_medida == 'KG' %}
+                                {% if valor == "1" %}Kilogramo{% else %}Kilogramos{% endif %}
+                            {% elif producto.unidad_medida == 'LT' %}
+                                {% if valor == "1" %}Litro{% else %}Litros{% endif %}
+                            {% else %}
+                                {{ producto.get_unidad_medida_display }}
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        {{ producto.contenido_neto }}
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    {% endif %}
+
+                {% if producto.especificaciones %}
+                    {% for grupo, atributos in producto.especificaciones.items %}
+                        <div class="mt-4">
+                            <h6 class="fw-bold p-2 text-uppercase mb-0" 
+                                style="background-color: #f8f9fa; color: #007934; border-left: 5px solid #007934; font-size: 0.85rem;">
+                                {{ grupo }}
+                            </h6>
+                            <table class="table table-sm table-hover border-start border-end border-bottom mb-0">
+                                <tbody>
+                                    {% for clave, valor in atributos.items %}
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-muted w-40" style="font-size: 0.85rem; background-color: #fafafa;">{{ clave }}</td>
+                                        <td class="ps-3" style="font-size: 0.85rem;">{{ valor }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .carousel-item {
+        transition: transform 0.6s ease-in-out;
+    }
+    .img-thumbnail:hover {
+        border-color: #198754;
+        box-shadow: 0 0 5px rgba(25, 135, 84, 0.5);
+    }
+    /* Estilo para las tablas de especificaciones */
+    .w-40 { width: 40%; }
+    #specs table td { vertical-align: middle; padding-top: 8px; padding-bottom: 8px; }
+
+    /* BADGES DE MARKETING */
+    .badge-marketing {
+        font-size: 0.75rem;
+        font-weight: 800;
+        padding: 5px 12px;
+        color: white;
+        text-transform: uppercase;
+        width: fit-content;
+        border-radius: 3px;
+        letter-spacing: 0.5px;
+    }
+    .badge-marketing.exclusive { background-color: #e61d2e; } /* Rojo Dia */
+    .badge-marketing.ahorrames { background-color: #ff4500; } /* Naranja/Rojo */
+</style>
+{% endblock %}

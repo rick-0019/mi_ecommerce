@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if show_batch_button %}
+    <li>
+        <a href="carga-masiva/" class="addlink" style="background-color: #417690;">
+            {% trans "Carga Masiva" %}
+        </a>
+    </li>
+    {% endif %}
+{% endblock %}

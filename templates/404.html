@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container text-center" style="margin-top: 100px; margin-bottom: 100px;">
+    <h1 class="display-1 fw-bold text-primary">404</h1>
+    <h2 class="mb-4">¡Ups! Página no encontrada</h2>
+    <p class="lead mb-5">
+        Parece que la dirección que ingresaste no existe o fue movida. 
+        No te preocupes, puedes volver al panel principal.
+    </p>
+    <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-home"></i> Volver al Inicio
+    </a>
+</div>
+{% endblock %}

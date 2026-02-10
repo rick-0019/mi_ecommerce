@@ -1,0 +1,47 @@
+<div class="modal-header border-0">
+    <h5 class="modal-title fw-bold">{{ titulo }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="formUsuarioCRUD" 
+      data-usuario-id="{% if usuario %}{{ usuario.id }}{% else %}null{% endif %}"
+      onsubmit="handlerGuardarUsuario(event)">
+    {% csrf_token %}
+    <div class="modal-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Nombre de Usuario</label>
+                {{ form.username }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Email</label>
+                {{ form.email }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Nombre</label>
+                {{ form.first_name }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Apellido</label>
+                {{ form.last_name }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Rol</label>
+                {{ form.rol }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-uppercase text-muted">Sucursal</label>
+                {{ form.sucursal }}
+            </div>
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    {{ form.is_active }}
+                    <label class="form-check-label fw-bold small text-uppercase text-muted" for="{{ form.is_active.id_for_label }}">Usuario Activo</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary px-4">Guardar</button>
+    </div>
+</form>

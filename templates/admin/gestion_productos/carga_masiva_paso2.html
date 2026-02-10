@@ -1,0 +1,156 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+<style>
+    .grid-container {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin: 20px 0;
+        overflow-x: auto;
+    }
+    .batch-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .batch-table th, .batch-table td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    .batch-table th {
+        background: #79aec8;
+        color: white;
+    }
+    .img-preview {
+        max-width: 80px;
+        height: auto;
+        border-radius: 4px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+    .submit-row {
+        position: sticky;
+        bottom: 0;
+        background: #f8f8f8;
+        padding: 15px;
+        border-top: 1px solid #ddd;
+        text-align: right;
+        z-index: 100;
+    }
+    .btn-save {
+        background: #417690;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    .btn-save:hover {
+        background: #2b5063;
+    }
+    .errorlist {
+        color: red;
+        font-size: 0.8em;
+        list-style: none;
+        padding-left: 0;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label='gestion_productos' %}">Gestion Productos</a>
+&rsaquo; <a href="{% url 'admin:gestion_productos_producto_batch_upload' %}">Carga Masiva</a>
+&rsaquo; Paso 2: Validación
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Validación de Productos</h1>
+    <p>Verifica y completa los datos antes de guardar. Revisa que el motor de parsing haya extraído correctamente la marca y medidas.</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <input type="hidden" name="categoria_id" value="{{ categoria_id }}">
+        
+        <div class="grid-container">
+            <table class="batch-table">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Nombre</th>
+                        <th>Marca</th>
+                        <th>Contenido Neto</th>
+                        <th>Unidad</th>
+                        <th>Tipo Envase</th>
+                        <th>Precio Venta</th>
+                        <th>Descripción Breve</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in formset %}
+                    <tr>
+                        <td>
+                            {% if form.instance.imagen_principal %}
+                                <img src="{{ form.instance.imagen_principal.url }}" class="img-preview">
+                            {% elif form.initial.temp_image_path %}
+                                <img src="{{ MEDIA_URL }}{{ form.initial.temp_image_path }}" class="img-preview">
+                                <br><small>Temporal</small>
+                            {% endif %}
+                            {{ form.temp_image_path }}
+                            {{ form.peso_kg }}
+                            {{ form.imagen_principal }}
+                        </td>
+                        <td>
+                            {{ form.nombre }}
+                            {{ form.nombre.errors }}
+                        </td>
+                        <td>
+                            {{ form.marca }}
+                            {{ form.marca.errors }}
+                        </td>
+                        <td>
+                            {{ form.contenido_neto }}
+                            {{ form.contenido_neto.errors }}
+                        </td>
+                        <td>
+                            {{ form.unidad_medida }}
+                            {{ form.unidad_medida.errors }}
+                        </td>
+                        <td>
+                            {{ form.tipo_envase }}
+                            {{ form.tipo_envase.errors }}
+                        </td>
+                        <td>
+                            {{ form.precio_venta }}
+                            {{ form.precio_venta.errors }}
+                        </td>
+                        <td>
+                            {{ form.descripcion_breve }}
+                            {{ form.descripcion_breve.errors }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="submit-row">
+            <input type="submit" name="confirm_save" value="Confirmar y Guardar Todos" class="btn-save">
+        </div>
+    </form>
+</div>
+{% endblock %}

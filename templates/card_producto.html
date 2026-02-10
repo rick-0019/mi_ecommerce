@@ -1,0 +1,95 @@
+<div class="card h-100 border shadow-sm p-3 card-hover card-producto-favorito position-relative" style="border-radius: 8px; overflow: hidden;">
+    
+    {# BADGES DE MARKETING (EXCLUSIVO ONLINE / AHORRAMES) #}
+    <div class="position-absolute top-0 start-0 w-100 p-2 d-flex flex-column gap-1" style="z-index: 10;">
+        {% if producto.exclusivo_online %}
+            <div class="badge-marketing exclusive shadow-sm">EXCLUSIVO ONLINE</div>
+        {% endif %}
+        {% if producto.ahorrames %}
+            <div class="badge-marketing ahorrames shadow-sm">AHORRAMES</div>
+        {% endif %}
+    </div>
+
+    <div class="text-end mb-1">
+        <a href="#" class="btn-favorito {% if producto.id in user_favoritos_ids %}active{% endif %}" data-producto-id="{{ producto.id }}">
+            <i class="bi bi-heart"></i>
+        </a>
+    </div>
+
+    <a href="{% url 'detalle_producto' producto.slug %}" class="d-block text-center mb-2">
+        <img src="{{ producto.imagen_principal.url }}" 
+             class="img-fluid" 
+             alt="{{ producto.nombre }}" 
+             style="height: 140px; width: 100%; object-fit: contain;">
+    </a>
+
+    <div class="card-body d-flex flex-column p-0">
+        <p class="fw-bold mb-0 text-uppercase" style="font-size: 0.75rem; color: #666; letter-spacing: 0.3px;">
+            {{ producto.marca.nombre }}
+        </p>
+
+        <h5 class="card-title mb-2" style="min-height: 2.2rem; overflow: hidden;">
+            <a href="{% url 'detalle_producto' producto.slug %}" 
+               class="text-decoration-none text-dark" 
+               style="font-size: 0.9rem; line-height: 1.2; display: block; font-weight: 500;">
+                {{ producto.nombre }}
+            </a>
+        </h5>
+
+        <div class="mt-auto">
+            <div class="mb-2">
+                {# LÓGICA DE PRECIOS CON OFERTA #}
+                {% if producto.precio_antes %}
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="text-muted text-decoration-line-through small fw-normal">
+                            $ {{ producto.precio_antes|stringformat:".2f" }}
+                        </span>
+                        {% if producto.descuento_porcentaje %}
+                            <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.7rem; border-radius: 4px;">
+                                <i class="bi bi-percent small"></i> {{ producto.descuento_porcentaje }}%
+                            </span>
+                        {% endif %}
+                    </div>
+                    <p class="mb-0 text-danger fw-bold" style="font-size: 1.4rem; line-height: 1; letter-spacing: -0.5px;">
+                        $ {{ producto.precio_actual|stringformat:".2f" }}
+                    </p>
+                {% else %}
+                    <p class="mb-0 text-dark fw-bold" style="font-size: 1.4rem; line-height: 1; letter-spacing: -0.5px;">
+                        $ {{ producto.precio_actual|stringformat:".2f" }}
+                    </p>
+                {% endif %}
+
+                {% if producto.precio_por_unidad_medida %}
+                    <div style="line-height: 1.1; margin-top: 6px;">
+                        <span style="color: #686767; font-size: 0.65rem;">
+                            Precio regular x {% if producto.unidad_medida == 'LT' or producto.unidad_medida == 'CM3' %}lt.{% else %}kg.{% endif %}: 
+                            ${{ producto.precio_por_unidad_medida }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <a href="{% url 'agregar' producto.id %}" 
+               class="btn w-100 fw-bold py-2 d-flex align-items-center justify-content-center mt-2" 
+               style="background-color: #16c250; color: white; border: none; border-radius: 5px; font-size: 0.9rem; transition: 0.3s; text-decoration: none;">
+                Agregar
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-marketing {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 4px 8px;
+        color: white;
+        text-transform: uppercase;
+        width: fit-content;
+        border-radius: 2px;
+    }
+    .badge-marketing.exclusive { background-color: #e61d2e; } /* Rojo Dia */
+    .badge-marketing.ahorrames { background-color: #ff4500; } /* Naranja/Rojo */
+    
+    .btn-agregar:hover { opacity: 0.9; transform: scale(1.02); }
+</style>
