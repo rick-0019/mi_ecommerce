@@ -1,7 +1,7 @@
 services:
   - type: web
     name: mi-ecommerce
-    runtime: python
+    env: python
     buildCommand: "./build.sh"
     startCommand: "gunicorn configuracion_principal.wsgi:application"
     envVars:
