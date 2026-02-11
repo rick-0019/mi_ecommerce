@@ -22,9 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SEGURIDAD
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-default-key-production')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 
 
 # Application definition
@@ -196,6 +196,34 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='pwfe hebt zooz wcnh
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Tu Tienda Online <hrsossio71@gmail.com>')
 
 # Producción: CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    "https://" + host for host in ALLOWED_HOSTS if host not in ["localhost", "127.0.0.1"]
-]
+CSRF_TRUSTED_ORIGINS = []
+for host in ALLOWED_HOSTS:
+    if host not in ["localhost", "127.0.0.1"]:
+        if host == "*":
+            # Si permitimos todo, no podemos poner "*" en CSRF facilmente, 
+            # pero para testing en Render esto suele fallar si no ponemos el dominio real.
+            pass
+        else:
+            CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
+
+# LOGGING para ver errores en Render
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
