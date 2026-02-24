@@ -163,17 +163,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Supabase S3 Configuration (for Production)
 if not DEBUG:
-    AWS_ACCESS_KEY_ID = config('SUPABASE_S3_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('SUPABASE_S3_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = config('SUPABASE_S3_BUCKET_NAME')
-    AWS_S3_ENDPOINT_URL = config('SUPABASE_S3_ENDPOINT_URL')
-    AWS_S3_REGION_NAME = config('SUPABASE_S3_REGION_NAME', default='sa-east-1') # default for many LATAM projects
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_S3_ENDPOINT_URL.replace('https://', '').split('/')[0]}/{AWS_STORAGE_BUCKET_NAME}"
+    AWS_ACCESS_KEY_ID = config('SUPABASE_S3_ACCESS_KEY_ID', default='')
+    AWS_SECRET_ACCESS_KEY = config('SUPABASE_S3_SECRET_ACCESS_KEY', default='')
+    AWS_STORAGE_BUCKET_NAME = config('SUPABASE_S3_BUCKET_NAME', default='')
+    AWS_S3_ENDPOINT_URL = config('SUPABASE_S3_ENDPOINT_URL', default='')
+    AWS_S3_REGION_NAME = config('SUPABASE_S3_REGION_NAME', default='sa-east-1')
+    
+    if AWS_S3_ENDPOINT_URL:
+        AWS_S3_CUSTOM_DOMAIN = f"{AWS_S3_ENDPOINT_URL.replace('https://', '').split('/')[0]}/{AWS_STORAGE_BUCKET_NAME}"
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
     AWS_S3_FILE_OVERWRITE = False
-    
-    # Custom domain logic if needed
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 # URLs de redirección
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
