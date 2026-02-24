@@ -1,9 +1,7 @@
 services:
   - type: web
     name: mi-ecommerce-service
-    env: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn configuracion_principal.wsgi:application"
+    env: docker
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -13,6 +11,16 @@ services:
         generateValue: true
       - key: DEBUG
         value: "false"
+      - key: SUPABASE_S3_ACCESS_KEY_ID
+        sync: false
+      - key: SUPABASE_S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: SUPABASE_S3_BUCKET_NAME
+        sync: false
+      - key: SUPABASE_S3_ENDPOINT_URL
+        sync: false
+      - key: SUPABASE_S3_REGION_NAME
+        value: "sa-east-1"
 
 databases:
   - name: mi-ecommerce-db

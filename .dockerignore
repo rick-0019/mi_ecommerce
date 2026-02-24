@@ -1,0 +1,19 @@
+.git
+.vscode
+env
+venv
+__pycache__
+*.pyc
+db.sqlite3
+media
+staticfiles
+.env
+Dockerfile
+.dockerignore
+render.yaml
+build.sh
+create_admin.py
+IA_Reporte Analisis proyecto.txt
+Formato JSON para Descripcion.json
+Contraseña de Aplicacion.txt
+A produccion.txt

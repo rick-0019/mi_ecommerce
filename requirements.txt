@@ -24,4 +24,5 @@ sqlparse==0.5.5
 tzdata==2025.3
 urllib3==2.6.3
 whitenoise==6.9.0
-dj-database-url==2.3.0
+django-storages[s3]==9.5.0
+boto3==1.37.1
