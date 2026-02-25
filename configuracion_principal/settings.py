@@ -165,16 +165,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 if not DEBUG:
     AWS_ACCESS_KEY_ID = config('SUPABASE_S3_ACCESS_KEY_ID', default='')
     AWS_SECRET_ACCESS_KEY = config('SUPABASE_S3_SECRET_ACCESS_KEY', default='')
-    AWS_STORAGE_BUCKET_NAME = config('SUPABASE_S3_BUCKET_NAME', default='')
+    AWS_STORAGE_BUCKET_NAME = config('SUPABASE_S3_BUCKET_NAME', default='productos')
     AWS_S3_ENDPOINT_URL = config('SUPABASE_S3_ENDPOINT_URL', default='')
-    AWS_S3_REGION_NAME = config('SUPABASE_S3_REGION_NAME', default='sa-east-1')
+    AWS_S3_REGION_NAME = config('SUPABASE_S3_REGION_NAME', default='us-west-2')
     
-    if AWS_S3_ENDPOINT_URL:
-        AWS_S3_CUSTOM_DOMAIN = f"{AWS_S3_ENDPOINT_URL.replace('https://', '').split('/')[0]}/{AWS_STORAGE_BUCKET_NAME}"
-        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
-    
-    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    # Supabase S3 requires path-style addressing (forcePathStyle: true)
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    
+    # Build the public URL for serving images from Supabase Storage
+    # Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/
+    SUPABASE_PROJECT_REF = config('SUPABASE_PROJECT_REF', default='adrjdpdgcpcggnoxyegx')
+    MEDIA_URL = f"https://{SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}/"
 # URLs de redirección
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
@@ -239,6 +244,16 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'configuracion_principal.storage_backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
         },
     },
 }
