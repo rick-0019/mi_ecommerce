@@ -6,8 +6,11 @@ pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# ONE-TIME: Flush existing data and load backup
+# Remove these 2 lines after the first successful deploy
+python manage.py flush --no-input
+python manage.py loaddata data_backup.json
+
 python create_admin.py
 
-# ONE-TIME: Load local data backup into production DB
-# Remove this line after the first successful deploy
-python manage.py loaddata data_backup.json
