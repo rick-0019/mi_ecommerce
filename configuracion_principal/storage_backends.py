@@ -29,9 +29,10 @@ class MediaStorage(S3Boto3Storage):
 
     def url(self, name):
         """
-        Override url() to return the Supabase public URL directly,
-        instead of generating a pre-signed S3 URL.
+        Override url() to return the Supabase public URL directly.
+        Must include self.location ('media') to match the actual storage path.
+        File in bucket: productos/media/productos/fotos/file.jpg
+        Public URL: https://<ref>.supabase.co/storage/v1/object/public/productos/media/productos/fotos/file.jpg
         """
         from django.conf import settings
-        # Use the MEDIA_URL which points to Supabase's public object URL
-        return f"{settings.MEDIA_URL}{name}"
+        return f"{settings.MEDIA_URL}{self.location}/{name}"
